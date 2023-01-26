@@ -94,7 +94,7 @@ namespace Ventulus
 
                 USelectNum.Show("野外露天休息每天花费1灵石，休息{num}天", 1, maxday, delegate (int num)
                 {
-                    Resources.Load<GameObject>("talkPrefab/TalkPrefab/talk5000").Inst(null);
+                    //Resources.Load<GameObject>("talkPrefab/TalkPrefab/talk5000").Inst(null);
                     if (num >= 4)
                     {
                         player.AddHp(player.HP_Max);
