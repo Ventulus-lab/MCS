@@ -31,22 +31,6 @@ namespace Ventulus
                 return false;
             }
 
-            [HarmonyPrefix]
-            [HarmonyPatch("GetRandom")]
-            public static bool GetRandomPrefix(ref int __result)
-            {
-                byte[] bytes = new byte[4];
-                new RNGCryptoServiceProvider().GetBytes(bytes);
-                Instance.Logger.LogInfo(BitConverter.ToString(bytes));
-                int I =  BitConverter.ToInt32(bytes, 0);
-                //整数位运算取绝对值
-   
-                __result = I ^ (I >> 31) - (I >> 31);
-                Instance.Logger.LogInfo(__result);
-                return false;
-            }
-
-
         }
     }
 }
