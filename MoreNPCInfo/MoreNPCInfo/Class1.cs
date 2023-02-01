@@ -34,7 +34,6 @@ namespace Ventulus
             Instance = this;
         }
 
-        //声望界面小修
         [HarmonyPatch(typeof(UINPCJiaoHu))]
         class UINPCJiaoHuPatch
         {
@@ -43,8 +42,8 @@ namespace Ventulus
             public static void ShowNPCInfoPanelPostfix(UINPCData npc)
             {
                 Instance.Logger.LogInfo("ShowNPCInfoPanel");
-                UINPCData NPCData = UINPCJiaoHu.Inst.NowJiaoHuNPC;
-                Instance.Logger.LogInfo(NPCData.json.ToString());
+                //UINPCData NPCData = UINPCJiaoHu.Inst.NowJiaoHuNPC;
+                Instance.Logger.LogInfo(npc.json.ToString());
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
             }
         }
