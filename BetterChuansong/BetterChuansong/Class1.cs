@@ -167,7 +167,8 @@ namespace Ventulus
         ConfigEntry<int> InterstateWarpCost;
         ConfigEntry<int> InterstateWarpTime;
         ConfigEntry<bool> FlightAddDays;
-        ConfigEntry<bool> UnitKilometer;
+        //ConfigEntry<bool> UnitKilometer;
+        ConfigEntry<bool> Enter5School;
         void Start()
         {
             //输出日志
@@ -183,7 +184,8 @@ namespace Ventulus
             InterstateWarpCost = Config.Bind<int>("config", "InterstateWarpCost", 6000, "跨州传送花费，默认6000灵石");
             InterstateWarpTime = Config.Bind<int>("config", "InterstateWarpTime", 60, "跨州传送时间，默认60天");
             FlightAddDays = Config.Bind<bool>("config", "FlightAddDays", true, "在宁州用遁术飞行增加花费天数，默认开启");
-            UnitKilometer = Config.Bind<bool>("config", "UnitKilometer", false, "在显示飞行距离时增加单位公里，默认关闭");
+            //UnitKilometer = Config.Bind<bool>("config", "UnitKilometer", false, "在显示飞行距离时增加单位公里，默认关闭");
+            Enter5School = Config.Bind<bool>("config", "Enter5School", false, "可传送进入五大门派，默认关闭");
         }
 
         public static BetterChuansong Instance;
@@ -253,7 +255,7 @@ namespace Ventulus
 
             int NingZhouShengWangLevel = PlayerEx.GetNingZhouShengWangLevel();
             //声名远扬500进入五大门派
-            if (NingZhouShengWangLevel >= 6)
+            if (NingZhouShengWangLevel >= 6 && Enter5School.Value)
             {
                 Instance.CanWarpSceneNameList.Add("竹山宗");
                 Instance.CanWarpSceneNameList.Add("金虹剑派");
@@ -1133,10 +1135,9 @@ namespace Ventulus
                     if (totaldays < 0) { totaldays = 0; }
                     PlayerEx.Player.AddTime(totaldays, 0, 0);
                     Instance.Logger.LogInfo("这次飞行距离为" + dis + "玩家遁速" + dunsu + "共花费天数" + (totaldays + 1).ToString());
-                    if (Instance.UnitKilometer.Value)
-                        UIPopTip.Inst.Pop(string.Format("{0}{1}公里花费{2}天时间", dunshuname, ((int)Math.Ceiling(dis * 100)).ToCNNumber(), (totaldays + 1).ToCNNumber()), PopTipIconType.任务完成);
-                    else
-                        UIPopTip.Inst.Pop(string.Format("{0}距离{1}花费{2}天时间", dunshuname, Math.Ceiling(dis * 10), (totaldays + 1).ToString()), PopTipIconType.任务完成);
+                    //初始和大傻的第二格到东石谷，“此处西北百余里便是东石谷”，按直线距离算，每地图长度单位等于50里路，按步行绕路总长算，每地图长度单位为20里路。
+                    UIPopTip.Inst.Pop(string.Format("{0}{1}里，花费{2}天时间", dunshuname, ((int)Math.Ceiling(dis * 50)).ToCNNumber(), (totaldays + 1).ToCNNumber()), PopTipIconType.任务完成);
+  
                 }
 
                 return true;
