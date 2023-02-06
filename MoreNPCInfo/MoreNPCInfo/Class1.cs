@@ -43,8 +43,25 @@ namespace Ventulus
                 favorQuJianList.Add(jsonobject["QuJian"].list[0].I);
                 favorStrList.Add(jsonobject["HaoGanDu"].Str);
             }
+
+            UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+            Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
+            foreach (var item in tShuXing.GetComponentsInChildren<Image>())
+            {
+                IconImage.Add(UnityEngine.Object.Instantiate<GameObject>(item.gameObject));
+            }
+            Instance.Logger.LogInfo("共获取图片对象" + IconImage.Count);
+            //标题图、标题图、年龄、气血、情分、修为、状态、寿元、资质、悟性、遁速、神识
+            //存一个范例
+            Transform tNianLing = tShuXing.Find("NianLing");
+            Instance.CiTiao = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject);
+            //【删除所有子对象】
+            //tShuXing.DestoryAllChild();
+            if (Instance.CiTiao ) Instance.Logger.LogInfo("已复制词条");
         }
 
+        private  List<GameObject> IconImage = new List<GameObject>();
+        private  GameObject CiTiao = new GameObject();
 
         private static Dictionary<int, string> NPCAction = new Dictionary<int, string>()
         {
@@ -351,20 +368,23 @@ namespace Ventulus
 
                 //腾地方
                 Transform tShuXingTitle = tShuXing.Find("Title");
-                tShuXingTitle.gameObject.SetActive(false);
+                if (tShuXingTitle) tShuXingTitle.gameObject.SetActive(false);
 
                 //年龄
                 Transform tNianLing = tShuXing.Find("NianLing");
-                tNianLing.localPosition = new Vector3(-120, 0, 0);
+                (tNianLing as RectTransform).anchoredPosition3D = new Vector3(-120, 22.5f, 0);
                 tNianLing.Find("Text").GetComponent<Text>().text = npc.Age.ToString() + "/" + npc.ShouYuan.ToString();
 
+                Instance.Logger.LogInfo("年龄往后");
                 //Id
                 Transform tId = tShuXing.Find("Id");
                 if (tId == null)
                 {
-                    tId = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    Instance.Logger.LogInfo("准备新建词条ID");
+                    tId = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tId.name = "Id";
-                    tId.localPosition = new Vector3(-120, 135, 0);
+                    (tId as RectTransform).anchoredPosition3D = new Vector3(-120, 157.5f, 0);
+                    Instance.Logger.LogInfo("新建词条ID完成");
                 }
                 tId.Find("Title").GetComponent<Text>().text = "ID:";
                 tId.Find("Text").GetComponent<Text>().text = npc.ID.ToString() + (npc.IsZhongYaoNPC ? string.Format("({0})", npc.ZhongYaoNPCID) : "");
@@ -374,9 +394,9 @@ namespace Ventulus
                 Transform tAction = tShuXing.Find("Action");
                 if (tAction == null)
                 {
-                    tAction = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    tAction = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tAction.name = "Action";
-                    tAction.localPosition = new Vector3(130, 135, 0);
+                    (tAction as RectTransform).anchoredPosition3D = new Vector3(130, 157.5f, 0);
                 }
                 tAction.Find("Title").GetComponent<Text>().text = "行动:";
                 tAction.Find("Text").GetComponent<Text>().text = npc.ActionID.ToString();
@@ -385,9 +405,9 @@ namespace Ventulus
                 Transform tType = tShuXing.Find("Type");
                 if (tType == null)
                 {
-                    tType = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    tType = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tType.name = "Type";
-                    tType.localPosition = new Vector3(-120, 90, 0);
+                    (tType as RectTransform).anchoredPosition3D = new Vector3(-120, 112.5f, 0);
                 }
                 tType.Find("Title").GetComponent<Text>().text = "类型:";
                 tType.Find("Text").GetComponent<Text>().text = (NPCType.ContainsKey(npc.NPCType) ? NPCType[npc.NPCType] : "未知") + (ShowStringInt.Value ? npc.NPCType.ToString() : "");
@@ -397,9 +417,9 @@ namespace Ventulus
                 Transform tLiuPai = tShuXing.Find("LiuPai");
                 if (tLiuPai == null)
                 {
-                    tLiuPai = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    tLiuPai = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tLiuPai.name = "LiuPai";
-                    tLiuPai.localPosition = new Vector3(130, 90, 0);
+                    (tLiuPai as RectTransform).anchoredPosition3D = new Vector3(130, 112.5f, 0);
                 }
                 tLiuPai.Find("Title").GetComponent<Text>().text = "流派:";
                 tLiuPai.Find("Text").GetComponent<Text>().text = (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
@@ -408,9 +428,9 @@ namespace Ventulus
                 Transform tXingGe = tShuXing.Find("XingGe");
                 if (tXingGe == null)
                 {
-                    tXingGe = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    tXingGe = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tXingGe.name = "XingGe";
-                    tXingGe.localPosition = new Vector3(-120, 45, 0);
+                    (tXingGe as RectTransform).anchoredPosition3D = new Vector3(-120, 67.5f, 0);
                 }
                 tXingGe.Find("Title").GetComponent<Text>().text = "性格:";
                 tXingGe.Find("Text").GetComponent<Text>().text = (NPCXingGe.ContainsKey(npc.XingGe) ? NPCXingGe[npc.XingGe] : "未知") + (ShowStringInt.Value ? npc.XingGe.ToString() : "") + (npc.XingGe < 10 ? "(正)" : "(邪)");
@@ -420,77 +440,117 @@ namespace Ventulus
                 Transform tTag = tShuXing.Find("Tag");
                 if (tTag == null)
                 {
-                    tTag = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    tTag = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tTag.name = "Tag";
-                    tTag.localPosition = new Vector3(130, 45, 0);
+                    (tTag as RectTransform).anchoredPosition3D = new Vector3(130, 67.5f, 0);
                 }
                 tTag.Find("Title").GetComponent<Text>().text = "标签:";
                 tTag.Find("Text").GetComponent<Text>().text = (NPCTag.ContainsKey(npc.Tag) ? NPCTag[npc.Tag] : "未知") + (ShowStringInt.Value ? npc.Tag.ToString() : "");
 
-                
+                Instance.Logger.LogInfo("标签往后");
 
                 //寿元
                 Transform tShouYuan = tShuXing.Find("ShouYuan");
-                tShouYuan.gameObject.SetActive(false);
+                if (tShouYuan) tShouYuan.gameObject.SetActive(false);
 
                 //悟道类型
                 Transform tWuDao = tShuXing.Find("WuDao");
                 if (tWuDao == null)
                 {
-                    tWuDao = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject, tNianLing.parent).transform;
+                    tWuDao = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tWuDao.name = "WuDao";
-                    tWuDao.localPosition = new Vector3(130, 0, 0);
+                    (tWuDao as RectTransform).anchoredPosition3D = new Vector3(130, 22.5f, 0);
                 }
                 tWuDao.Find("Title").GetComponent<Text>().text = "悟道:";
-                int wudao=0;
+                int wudao = 0;
                 if (npc.json.HasField("wudaoType"))
                     wudao = npc.json.GetField("wudaoType").I;
                 tWuDao.Find("Text").GetComponent<Text>().text = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + (ShowStringInt.Value ? wudao.ToString() : "");
 
                 //气血
                 Transform tQiXue = tShuXing.Find("QiXue");
-                //tQiXue.gameObject.SetActive(false);
-                tQiXue.localPosition = new Vector3(-120, -45, 0);
+                if (tQiXue == null)
+                {
+                    tQiXue = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tQiXue.name = "QiXue";
+                    (tQiXue as RectTransform).anchoredPosition3D = new Vector3(-120, -22.5f, 0);
+                }
+
 
                 //好感
                 Transform tFavor = tShuXing.Find("QingFen");
+                if (tFavor == null)
+                {
+                    tFavor = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tFavor.name = "QingFen";
+                    (tFavor as RectTransform).anchoredPosition3D = new Vector3(130, -22.5f, 0);
+                }
                 int FavorLevel = 1;
                 while (FavorLevel < favorQuJianList.Count && npc.Favor >= favorQuJianList[FavorLevel])
                 {
                     FavorLevel++;
                 }
                 tFavor.Find("Text").GetComponent<Text>().text = favorStrList[FavorLevel - 1] + npc.Favor.ToString();
-                tFavor.localPosition = new Vector3(130, -45, 0);
+
 
                 //悟性
                 Transform tWuXing = tShuXing.Find("WuXing");
-                //tWuXing.gameObject.SetActive(false);
-                tWuXing.localPosition = new Vector3(-120, -90, 0);
+                if (tWuXing == null)
+                {
+                    tWuXing = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tWuXing.name = "WuXing";
+                    (tWuXing as RectTransform).anchoredPosition3D = new Vector3(-120, -67.5f, 0);
+                }
 
                 //资质
                 Transform tZiZhi = tShuXing.Find("ZiZhi");
-                //tZiZhi.gameObject.SetActive(false);
-                tZiZhi.localPosition = new Vector3(130, -90, 0);
+                if (tZiZhi == null)
+                {
+                    tZiZhi = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tZiZhi.name = "ZiZhi";
+                    (tZiZhi as RectTransform).anchoredPosition3D = new Vector3(130, -67.5f, 0);
+                }
+
 
                 //遁速
                 Transform tDunSu = tShuXing.Find("DunSu");
-                //tDunSu.gameObject.SetActive(false);
-                tDunSu.localPosition = new Vector3(-120, -135, 0);
+                if (tDunSu == null)
+                {
+                    tDunSu = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tDunSu.name = "DunSu";
+                    (tDunSu as RectTransform).anchoredPosition3D = new Vector3(-120, -112.5f, 0);
+                }
+
 
                 //修为
                 Transform tXiuWei = tShuXing.Find("XiuWei");
-                //tXiuWei.gameObject.SetActive(false);
-                tXiuWei.localPosition = new Vector3(130, -135, 0);
+                if (tXiuWei == null)
+                {
+                    tXiuWei = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tXiuWei.name = "XiuWei";
+                    (tXiuWei as RectTransform).anchoredPosition3D = new Vector3(130, -112.5f, 0);
+                }
+
 
                 //神识
                 Transform tShenShi = tShuXing.Find("ShenShi");
-                //tShenShi.gameObject.SetActive(false);
-                tShenShi.localPosition = new Vector3(-120, -180, 0);
+                if (tShenShi == null)
+                {
+                    tShenShi = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tShenShi.name = "ShenShi";
+                    (tShenShi as RectTransform).anchoredPosition3D = new Vector3(-120, -157.5f, 0);
+                }
+
 
                 //状态
                 Transform tZhuangTai = tShuXing.Find("ZhuangTai");
-                //tZhuangTai.gameObject.SetActive(false);
-                tZhuangTai.localPosition = new Vector3(130, -180, 0);
+                if (tZhuangTai == null)
+                {
+                    tZhuangTai = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                    tZhuangTai.name = "ZhuangTai";
+                    (tZhuangTai as RectTransform).anchoredPosition3D = new Vector3(130, -157.5f, 0);
+                }
+
 
 
             }
