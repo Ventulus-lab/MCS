@@ -55,9 +55,10 @@ namespace Ventulus
             //存一个范例
             Transform tNianLing = tShuXing.Find("NianLing");
             Instance.CiTiao = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject);
+            
+            if (Instance.CiTiao == null ) Instance.Logger.LogInfo("备份失败");
             //【删除所有子对象】
             //tShuXing.DestoryAllChild();
-            if (Instance.CiTiao ) Instance.Logger.LogInfo("已复制词条");
         }
 
         private  List<GameObject> IconImage = new List<GameObject>();
@@ -350,7 +351,8 @@ namespace Ventulus
                 Instance.Logger.LogInfo(npc.json.ToString());
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
-                //原词条图标为1到10号
+
+                
 
                 //称号
                 Transform tChengHao = NPCInfoPanel.transform.Find("NPCShow/ChengHao");
@@ -375,12 +377,20 @@ namespace Ventulus
                 (tNianLing as RectTransform).anchoredPosition3D = new Vector3(-120, 22.5f, 0);
                 tNianLing.Find("Text").GetComponent<Text>().text = npc.Age.ToString() + "/" + npc.ShouYuan.ToString();
 
+                //存一个范例
+
+                Instance.CiTiao = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject);
+                if (Instance.CiTiao == null) Instance.Logger.LogInfo("备份失败");
                 Instance.Logger.LogInfo("年龄往后");
                 //Id
                 Transform tId = tShuXing.Find("Id");
                 if (tId == null)
                 {
                     Instance.Logger.LogInfo("准备新建词条ID");
+                    if (Instance.CiTiao == new GameObject()) Instance.Logger.LogInfo("根本没备份等于新go");
+                    if (Instance.CiTiao == null) Instance.Logger.LogInfo("根本没备份等于空");
+                    if (tShuXing == null) Instance.Logger.LogInfo("属性对象都没有了");
+                    if (Instance.CiTiao.transform == null) Instance.Logger.LogInfo("属性对象的transform都没有了");
                     tId = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tId.name = "Id";
                     (tId as RectTransform).anchoredPosition3D = new Vector3(-120, 157.5f, 0);
@@ -405,6 +415,7 @@ namespace Ventulus
                 Transform tType = tShuXing.Find("Type");
                 if (tType == null)
                 {
+                    
                     tType = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tType.name = "Type";
                     (tType as RectTransform).anchoredPosition3D = new Vector3(-120, 112.5f, 0);
