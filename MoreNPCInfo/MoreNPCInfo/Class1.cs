@@ -1,7 +1,9 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using Fungus;
 using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -46,23 +48,124 @@ namespace Ventulus
 
             UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
             Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
+
+            //称号
+            Transform tChengHao = NPCInfoPanel.transform.Find("NPCShow/ChengHao");
+            Transform tName = NPCInfoPanel.transform.Find("NPCShow/Name");
+            if (tChengHao == null)
+            {
+                tChengHao = UnityEngine.Object.Instantiate<GameObject>(tName.gameObject, tName.parent).transform;
+                tChengHao.gameObject.name = "ChengHao";
+                //原姓名下移
+                tName.localPosition = new Vector3(0, -287.4f, 0);
+            }
+
+            //备份图片
             foreach (var item in tShuXing.GetComponentsInChildren<Image>())
             {
                 IconImage.Add(UnityEngine.Object.Instantiate<GameObject>(item.gameObject));
             }
             Instance.Logger.LogInfo("共获取图片对象" + IconImage.Count);
             //标题图、标题图、年龄、气血、情分、修为、状态、寿元、资质、悟性、遁速、神识
-            //存一个范例
+
+            //存一个词条范例
             Transform tNianLing = tShuXing.Find("NianLing");
             Instance.CiTiao = UnityEngine.Object.Instantiate<GameObject>(tNianLing.gameObject);
-            
-            if (Instance.CiTiao == null ) Instance.Logger.LogInfo("备份失败");
+            tNianLing = null;
+            if (Instance.CiTiao == null) Instance.Logger.LogInfo("备份失败");
+            else Instance.Logger.LogInfo("备份成功");
+
+            //开始协程
+            StartCoroutine(BuildCiTiao());
+        }
+        IEnumerator BuildCiTiao()
+        {
+            UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+            Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
             //【删除所有子对象】
-            //tShuXing.DestoryAllChild();
+            tShuXing.DestoryAllChild();
+
+            //【协程返回控制权】
+            yield return null;
+
+            //【新建词条子对象】
+            Transform tID = MakeNewCiTiao("ID", tShuXing);
+            tID.Find("Title").GetComponent<Text>().text = "ID:";
+
+            Transform tNianLing = MakeNewCiTiao("NianLing", tShuXing);
+            tNianLing.Find("Title").GetComponent<Text>().text = "年龄:";
+
+            Transform tQingFen = MakeNewCiTiao("QingFen", tShuXing);
+            tQingFen.Find("Title").GetComponent<Text>().text = "好感:";
+
+            Transform tQiXue = MakeNewCiTiao("QiXue", tShuXing);
+            tQiXue.Find("Title").GetComponent<Text>().text = "气血:";
+
+            Transform tWuXing = MakeNewCiTiao("WuXing", tShuXing);
+            tWuXing.Find("Title").GetComponent<Text>().text = "悟性:";
+
+            Transform tZiZhi = MakeNewCiTiao("ZiZhi", tShuXing);
+            tZiZhi.Find("Title").GetComponent<Text>().text = "资质:";
+
+            Transform tDunSu = MakeNewCiTiao("DunSu", tShuXing);
+            tDunSu.Find("Title").GetComponent<Text>().text = "遁速:";
+
+            Transform tShenShi = MakeNewCiTiao("ShenShi", tShuXing);
+            tShenShi.Find("Title").GetComponent<Text>().text = "神识:";
+
+            //8左8右
+            Transform tAction = MakeNewCiTiao("Action", tShuXing);
+            tAction.Find("Title").GetComponent<Text>().text = "行动:";
+
+            Transform tType = MakeNewCiTiao("Type", tShuXing);
+            tType.Find("Title").GetComponent<Text>().text = "类型:";
+
+            Transform tLiuPai = MakeNewCiTiao("LiuPai", tShuXing);
+            tLiuPai.Find("Title").GetComponent<Text>().text = "流派:";
+
+            Transform tXingGe = MakeNewCiTiao("XingGe", tShuXing);
+            tXingGe.Find("Title").GetComponent<Text>().text = "性格:";
+
+            Transform tTag = MakeNewCiTiao("Tag", tShuXing);
+            tTag.Find("Title").GetComponent<Text>().text = "标签:";
+
+            Transform tWuDao = MakeNewCiTiao("WuDao", tShuXing);
+            tWuDao.Find("Title").GetComponent<Text>().text = "悟道:";
+
+            Transform tXiuWei = MakeNewCiTiao("XiuWei", tShuXing);
+            tXiuWei.Find("Title").GetComponent<Text>().text = "修为:";
+
+            Transform tZhuangTai = MakeNewCiTiao("ZhuangTai", tShuXing);
+            tZhuangTai.Find("Title").GetComponent<Text>().text = "状态:";
+
+            //不显示
+            Transform tShouYuan = MakeNewCiTiao("ShouYuan", tShuXing);
+            tShouYuan.Find("Title").GetComponent<Text>().text = "寿元:";
+            tShouYuan.gameObject.SetActive(false);
+
+            for (int i = 0; i < tShuXing.childCount; i++)
+            {
+                Vector3 v3;
+                if (i < 8)
+                    v3 = new Vector3(-120f, 157.5f - 45f * i, 0);
+                else
+                    v3 = new Vector3(130f, 157.5f - 45f * (i - 8), 0);
+                tShuXing.GetChild(i).localPosition = v3;
+            }
+        }
+        public static Transform MakeNewCiTiao(string name, Transform tShuXing)
+        {
+            Transform transform = tShuXing.Find(name);
+            if (transform == null)
+            {
+                transform = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
+                transform.name = name;
+            }
+            return transform;
         }
 
-        private  List<GameObject> IconImage = new List<GameObject>();
-        private  GameObject CiTiao = new GameObject();
+        public List<GameObject> IconImage = new List<GameObject>();
+        public GameObject CiTiao = new GameObject();
 
         private static Dictionary<int, string> NPCAction = new Dictionary<int, string>()
         {
@@ -335,11 +438,35 @@ namespace Ventulus
             {104,"金虹剑仙"},
         };
 
-        [HarmonyPatch(typeof(UINPCJiaoHu))]
+        [HarmonyPatch(typeof(UINPCInfoPanel))]
+        class UINPCInfoPanelPatch
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch("SetNPCInfo")]
+            public static bool SetNPCInfoPrefix(UINPCInfoPanel __instance)
+            {
+                Instance.Logger.LogInfo("SetNPCInfoPrefix");
+                UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+                Transform tChengHao = NPCInfoPanel.transform.Find("NPCShow/ChengHao");
+                tChengHao.Find("Text").GetComponent<Text>().text = __instance.npc.Title;
+                return true;
+            }
+
+            [HarmonyPostfix]
+            [HarmonyPatch("SetNPCInfo")]
+            public static void SetNPCInfoPostfix()
+            {
+
+            }
+        }
+
+
+
+        //[HarmonyPatch(typeof(UINPCJiaoHu))]
         class UINPCJiaoHuPatch
         {
-            [HarmonyPostfix]
-            [HarmonyPatch("ShowNPCInfoPanel")]
+            //[HarmonyPostfix]
+            //[HarmonyPatch("ShowNPCInfoPanel")]
             public static void ShowNPCInfoPanelPostfix(UINPCData npc)
             {
                 Instance.Logger.LogInfo("ShowNPCInfoPanel");
@@ -352,7 +479,7 @@ namespace Ventulus
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
 
-                
+
 
                 //称号
                 Transform tChengHao = NPCInfoPanel.transform.Find("NPCShow/ChengHao");
@@ -415,7 +542,7 @@ namespace Ventulus
                 Transform tType = tShuXing.Find("Type");
                 if (tType == null)
                 {
-                    
+
                     tType = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                     tType.name = "Type";
                     (tType as RectTransform).anchoredPosition3D = new Vector3(-120, 112.5f, 0);
