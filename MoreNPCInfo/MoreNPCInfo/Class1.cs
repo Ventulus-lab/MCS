@@ -33,9 +33,9 @@ namespace Ventulus
             Instance = this;
         }
 
-        void Init(MessageData data)
+        void Init(MessageData data = null)
         {
-            MaskByCondition = Config.Bind<bool>("config", "MaskByCondition", true, "按条件遮挡部分信息，默认开启");
+            //MaskByCondition = Config.Bind<bool>("config", "MaskByCondition", true, "按条件遮挡部分信息，默认开启");
             ShowStringInt = Config.Bind<bool>("config", "ShowStringInt", false, "显示代表字符串的数值，默认关闭");
             foreach (JSONObject jsonobject in jsonData.instance.NpcHaoGanDuData.list)
             {
@@ -459,13 +459,18 @@ namespace Ventulus
         {
             [HarmonyPrefix]
             [HarmonyPatch("SetNPCInfo")]
-            public static bool SetNPCInfoPrefix(UINPCInfoPanel __instance)
+            public static bool SetNPCInfoPrefix()
             {
                 Instance.Logger.LogInfo("SetNPCInfoPrefix");
-                Instance.Logger.LogInfo(__instance.npc.json.ToString());
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+                //手动激活普通的查看属性
+                NPCInfoPanel.ShuXing.SetActive(true);
+                NPCInfoPanel.FightShuXing.SetActive(false);
+
                 Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
-                UINPCData npc = __instance.npc;
+                UINPCData npc = NPCInfoPanel.npc;
+                Instance.Logger.LogInfo(npc.json.ToString());
+                
 
                 //称号
 
@@ -531,13 +536,12 @@ namespace Ventulus
                                      select dian)
                 {
                     placestr = "在大地图上";
-                    foreach (string ludian in jsonData.instance.AllMapLuDainType.keys)
+                    foreach (var ludian in from string ludian in jsonData.instance.AllMapLuDainType.keys
+                                           where ludian == dian.ToString()
+                                           select ludian)
                     {
-                        if (ludian == dian.ToString())
-                        {
-                            placestr = "在" + jsonData.instance.AllMapLuDainType[ludian]["LuDianName"].str.ToCN();
-                            break;
-                        }
+                        placestr = "在" + jsonData.instance.AllMapLuDainType[ludian]["LuDianName"].str.ToCN();
+                        break;
                     }
                 }
 
@@ -580,8 +584,11 @@ namespace Ventulus
                 tShuXing.Find("WuDao/Text").GetComponent<Text>().text = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + (ShowStringInt.Value ? wudao.ToString() : "");
 
                 //修为
-                int maxexp = jsonData.instance.LevelUpDataJsonData[npc.Level.ToString()]["MaxExp"].I;
-                int percent = npc.Exp * 100 / maxexp;
+                //"MaxExp":194400000最大值刚刚好用int装下，但要是*100就不够了
+                long maxexp = jsonData.instance.LevelUpDataJsonData[npc.Level.ToString()]["MaxExp"].i;
+                long percent = npc.json.GetField("exp").i * 100 / maxexp;
+                //Instance.Logger.LogInfo("境界" + npc.Level + "最大修为"+ maxexp + "NPC当前修为" + npc.Exp);
+                //Instance.Logger.LogInfo(jsonData.instance.LevelUpDataJsonData.ToString());
                 tShuXing.Find("XiuWei/Text").GetComponent<Text>().text = npc.LevelStr + "(" + percent + "%)";
 
                 //状态
