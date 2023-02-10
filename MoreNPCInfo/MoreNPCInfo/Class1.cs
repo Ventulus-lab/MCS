@@ -88,8 +88,9 @@ namespace Ventulus
             yield return null;
 
             //【新建词条子对象】
-            Transform tZhongZu = MakeNewCiTiao("ZhongZu", tShuXing);
-            tZhongZu.Find("Title").GetComponent<Text>().text = "种族:";
+            Transform tAction = MakeNewCiTiao("Action", tShuXing);
+            tAction.Find("Title").GetComponent<Text>().text = "行动:";
+            //占据第一行
 
             Transform tNianLing = MakeNewCiTiao("NianLing", tShuXing);
             tNianLing.Find("Title").GetComponent<Text>().text = "年龄:";
@@ -113,8 +114,10 @@ namespace Ventulus
             tShenShi.Find("Title").GetComponent<Text>().text = "神识:";
 
             //8左8右
-            Transform tAction = MakeNewCiTiao("Action", tShuXing);
-            tAction.Find("Title").GetComponent<Text>().text = "行动:";
+            Transform tZhongZu = MakeNewCiTiao("ZhongZu", tShuXing);
+            tZhongZu.Find("Title").GetComponent<Text>().text = "种族:";
+            tZhongZu.gameObject.SetActive(false);
+            //给行动空位置
 
             Transform tType = MakeNewCiTiao("Type", tShuXing);
             tType.Find("Title").GetComponent<Text>().text = "类型:";
@@ -155,6 +158,22 @@ namespace Ventulus
             Transform tID = UnityEngine.Object.Instantiate<GameObject>(Instance.BiaoTi, tShuXing).transform;
             tID.name = "ID";
             tID.localPosition = new Vector3(-230, 700, 0);
+
+            //调整战斗探查信息面板
+            Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
+            //获取五行灵根UI
+            GameObject goLingGen = GameObject.Find("NewUICanvas(Clone)/TabPanel(Clone)/TabSelect/Panel/属性/");
+            Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
+
+            //增加种族
+            Transform tZhongZu2 = MakeNewCiTiao("ZhongZu", tFightShuXing);
+            tZhongZu2.Find("Title").GetComponent<Text>().text = "种族:";
+            Vector3 v32 = tZhongZu2.localPosition;
+            v32.y += 50;
+            tZhongZu2.localPosition = v32;
+
+            //五行灵根
+            Transform tLingGen = UnityEngine.Object.Instantiate<GameObject>(Instance.LingGen, tFightShuXing).transform;
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
         {
@@ -170,6 +189,7 @@ namespace Ventulus
         public List<GameObject> IconImage = new List<GameObject>();
         public GameObject CiTiao = new GameObject();
         public GameObject BiaoTi = new GameObject();
+        public GameObject LingGen = new GameObject();
         private static Dictionary<int, string> NPCAction = new Dictionary<int, string>()
         {
             {1,"休息"},
@@ -453,24 +473,48 @@ namespace Ventulus
             {20,"普通受邀"},
             {21,"道侣受邀"},
         };
+        private static string ZhongZuSex(UINPCData npc)
+        {
+            string ZhongZu = string.Empty;
+            int AvatarType = npc.json.GetField("AvatarType").I;
+            int SexType = npc.json.GetField("SexType").I;
+            if (AvatarType == 1)
+                ZhongZu = "人族";
+            else if (AvatarType == 2)
+                ZhongZu = "妖族";
+            else if (AvatarType == 3)
+                ZhongZu = "魔族";
+            else if (AvatarType == 4)
+                ZhongZu = "鬼族";
+            if (SexType == 1)
+                ZhongZu = ZhongZu + "男";
+            else if (SexType == 2)
+                ZhongZu = ZhongZu + "女";
+            else if (SexType == 3)
+                ZhongZu = ZhongZu + "变态";
+            if (ZhongZu == string.Empty)
+                ZhongZu = "未知";
+            return ZhongZu;
+        }
 
         [HarmonyPatch(typeof(UINPCInfoPanel))]
         class UINPCInfoPanelPatch
         {
             [HarmonyPrefix]
             [HarmonyPatch("SetNPCInfo")]
-            public static bool SetNPCInfoPrefix()
+            public static bool SetNPCInfoPrefix(UINPCInfoPanel __instance)
             {
                 Instance.Logger.LogInfo("SetNPCInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+                UINPCData npc = __instance.npc;
+
                 //手动激活普通的查看属性
                 NPCInfoPanel.ShuXing.SetActive(true);
                 NPCInfoPanel.FightShuXing.SetActive(false);
 
                 Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
-                UINPCData npc = NPCInfoPanel.npc;
-                Instance.Logger.LogInfo(npc.json.ToString());
-                
+                Instance.Logger.LogInfo(npc.json.ToString().ToCN());
+
 
                 //称号
 
@@ -478,29 +522,10 @@ namespace Ventulus
                 tChengHao.Find("Text").GetComponent<Text>().text = npc.Title;
 
                 //ID
-                tShuXing.Find("ID").GetComponent<Text>().text = npc.ID.ToString() + (npc.IsZhongYaoNPC ? string.Format("({0})", npc.ZhongYaoNPCID) : "");
+                tShuXing.Find("ID").GetComponent<Text>().text = npc.ID.ToString() + (npc.IsZhongYaoNPC ? $"({npc.ZhongYaoNPCID})" : "");
 
                 //种族+性别
-                string ZhongZu = string.Empty;
-                int AvatarType = npc.json.GetField("AvatarType").I;
-                int SexType = npc.json.GetField("SexType").I;
-                if (AvatarType == 1)
-                    ZhongZu = "人族";
-                else if (AvatarType == 2)
-                    ZhongZu = "妖族";
-                else if (AvatarType == 3)
-                    ZhongZu = "魔族";
-                else if (AvatarType == 4)
-                    ZhongZu = "鬼族";
-                if (SexType == 1)
-                    ZhongZu = ZhongZu + "男";
-                else if (SexType == 2)
-                    ZhongZu = ZhongZu + "女";
-                else if (SexType == 3)
-                    ZhongZu = ZhongZu + "变态";
-                if (ZhongZu == string.Empty)
-                    ZhongZu = "未知";
-                tShuXing.Find("ZhongZu/Text").GetComponent<Text>().text = ZhongZu;
+                tShuXing.Find("ZhongZu/Text").GetComponent<Text>().text = ZhongZuSex(npc);
 
                 //年龄+寿元
                 tShuXing.Find("NianLing/Text").GetComponent<Text>().text = npc.Age.ToString() + "/" + npc.ShouYuan.ToString();
@@ -511,7 +536,7 @@ namespace Ventulus
                 {
                     FavorLevel++;
                 }
-                tShuXing.Find("QingFen/Text").GetComponent<Text>().text = favorStrList[FavorLevel - 1] + "(" + npc.Favor.ToString() + ")";
+                tShuXing.Find("QingFen/Text").GetComponent<Text>().text = favorStrList[FavorLevel - 1] + $"({npc.Favor})";
 
                 //气血
                 tShuXing.Find("QiXue/Text").GetComponent<Text>().text = npc.HP.ToString();
@@ -609,12 +634,29 @@ namespace Ventulus
 
                 return false;
             }
-            [HarmonyPostfix]
-            [HarmonyPatch("SetNPCInfo")]
-            public static void SetNPCInfoPostfix()
+            [HarmonyPrefix]
+            [HarmonyPatch("SetFightInfo")]
+            public static bool SetFightInfoPrefix(UINPCInfoPanel __instance)
             {
+                Instance.Logger.LogInfo("SetFightInfoPrefix");
+                UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+                Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
 
+                UINPCData npc = __instance.npc;
+                Instance.Logger.LogInfo(npc.json.ToString().ToCN());
+
+                //称号
+                Transform tChengHao = NPCInfoPanel.transform.Find("NPCShow/ChengHao");
+                tChengHao.Find("Text").GetComponent<Text>().text = npc.Title;
+
+
+                //种族+性别
+                tFightShuXing.Find("ZhongZu/Text").GetComponent<Text>().text = ZhongZuSex(npc);
+
+
+                return true;
             }
         }
+
     }
 }

@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("天赋解锁")]
-[assembly: AssemblyCopyright("Copyright Ventulus©  2023")]
+[assembly: AssemblyCopyright("Ventulus Copyright ©  2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
