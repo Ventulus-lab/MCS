@@ -177,6 +177,7 @@ namespace Ventulus
             //Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
             //五行灵根
             //Transform tLingGen = UnityEngine.Object.Instantiate<GameObject>(Instance.LingGen, tFightShuXing).transform;
+
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
         {
