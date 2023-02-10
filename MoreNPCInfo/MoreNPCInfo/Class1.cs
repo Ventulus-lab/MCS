@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Tab;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -161,19 +162,21 @@ namespace Ventulus
 
             //调整战斗探查信息面板
             Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
-            //获取五行灵根UI
-            GameObject goLingGen = GameObject.Find("NewUICanvas(Clone)/TabPanel(Clone)/TabSelect/Panel/属性/");
-            Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
+            
 
             //增加种族
             Transform tZhongZu2 = MakeNewCiTiao("ZhongZu", tFightShuXing);
             tZhongZu2.Find("Title").GetComponent<Text>().text = "种族:";
-            Vector3 v32 = tZhongZu2.localPosition;
-            v32.y += 50;
-            tZhongZu2.localPosition = v32;
+            tZhongZu2.localPosition = new Vector3(30,90,0);
 
+            //获取五行灵根UI
+            //Instance.Logger.LogInfo("尝试获取五行灵根UI");
+            //Transform tShuXingPanel = SingletonMono<TabUIMag>.Instance.transform.Find("TabSelect/Panel/属性");
+            //if (tShuXingPanel != null) Instance.Logger.LogInfo("找到属性面板");
+            //GameObject goLingGen = tShuXingPanel.Find().gameObject;
+            //Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
             //五行灵根
-            Transform tLingGen = UnityEngine.Object.Instantiate<GameObject>(Instance.LingGen, tFightShuXing).transform;
+            //Transform tLingGen = UnityEngine.Object.Instantiate<GameObject>(Instance.LingGen, tFightShuXing).transform;
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
         {
@@ -627,8 +630,13 @@ namespace Ventulus
                 {
                     if (NpcJieSuanManager.inst.npcTuPo.IsCanSmallTuPo(npc.ID))
                         zhuangtaistr += "(小境界突破)";
-                    else if (NpcJieSuanManager.inst.npcTuPo.IsCanBigTuPo(npc.ID))
-                        zhuangtaistr += "(大境界突破率" + NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID) + ")";
+                    else 
+                    {
+                        int tupolv = NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID);
+                        if (NpcJieSuanManager.inst.npcTuPo.IsCanBigTuPo(npc.ID))
+                            zhuangtaistr = "正在突破";
+                        zhuangtaistr += $"(突破率{tupolv}%)";
+                    }
                 }
                 tShuXing.Find("ZhuangTai/Text").GetComponent<Text>().text = zhuangtaistr;
 
@@ -641,6 +649,9 @@ namespace Ventulus
                 Instance.Logger.LogInfo("SetFightInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
+                //手动激活普通的查看属性
+                NPCInfoPanel.ShuXing.SetActive(false);
+                NPCInfoPanel.FightShuXing.SetActive(true);
 
                 UINPCData npc = __instance.npc;
                 Instance.Logger.LogInfo(npc.json.ToString().ToCN());
@@ -653,7 +664,7 @@ namespace Ventulus
                 //种族+性别
                 tFightShuXing.Find("ZhongZu/Text").GetComponent<Text>().text = ZhongZuSex(npc);
 
-
+              
                 return true;
             }
         }
