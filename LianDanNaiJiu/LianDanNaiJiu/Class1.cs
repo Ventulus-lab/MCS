@@ -23,11 +23,11 @@ namespace Ventulus
             Instance = this;
         }
         [HarmonyPatch(typeof(LianDanPanel))]
-        class LianDanPanelPatch
+        class LianDanPanel_Patch
         {
             [HarmonyPrefix]
             [HarmonyPatch("StartLianDan")]
-            public static bool StartLianDanPrefix()
+            public static bool StartLianDan_Prefix()
             {
                 //Instance.Logger.LogInfo("啊啊啊啊啊开始算啦");
                 DanLuSlot danLu = LianDanUIMag.Instance.LianDanPanel.DanLu;
@@ -37,10 +37,10 @@ namespace Ventulus
                 {
                     if (value.uuid == danLu.Item.Uid)
                     {
-                        Instance.Logger.LogInfo("现在耐久是" + naijiu + "准备加一");
+                        //Instance.Logger.LogInfo("现在耐久是" + naijiu + "准备加一");
                         value.Seid.SetField("NaiJiu", naijiu + 1);
                         danLu.Item.Seid.SetField("NaiJiu", naijiu + 1);
-                        Instance.Logger.LogInfo(value.ToString());
+                        //Instance.Logger.LogInfo(value.ToString());
                     }
                 }
                 return true;
@@ -48,13 +48,13 @@ namespace Ventulus
         }
 
         [HarmonyPatch(typeof(LianDanResult))]
-        class LianDanResultPatch
+        class LianDanResult_Patch
         {
             [HarmonyPrefix]
             [HarmonyPatch("Success")]
-            public static bool SuccessPrefix()
+            public static bool Success_Prefix()
             {
-                //Instance.Logger.LogInfo("啊啊啊啊啊算完啦");
+                //Instance.Logger.LogInfo("啊啊啊啊啊成功算完啦");
                 DanLuSlot danLu = LianDanUIMag.Instance.LianDanPanel.DanLu;
                 KBEngine.Avatar player = Tools.instance.getPlayer();
                 if (!danLu.IsNull())
@@ -62,21 +62,55 @@ namespace Ventulus
                     int naijiu = danLu.Item.Seid["NaiJiu"].I;
                     if (naijiu <= 1)
                     {
-                        Instance.Logger.LogInfo("发现丹炉耐久是加的1准备炸啦");
+                        //Instance.Logger.LogInfo("发现丹炉耐久是加的1准备炸啦");
                         player.removeItem(danLu.Item.Uid);
                         danLu.SetNull();
-                        Tools.Say("{vpunch=10,0.5}在你刚刚将丹药取出来的时候，突然丹炉崩裂开来，幸好没有伤到人，好危险！", 0);
+                        Tools.Say("{vpunch=10,0.5}在你刚刚取出丹药的时候，突然丹炉崩裂开来，幸好没有伤到人，好危险！", 0);
                     }
                     else
                     {
-                        Instance.Logger.LogInfo("现在耐久是" + naijiu + "准备减一");
+                        //Instance.Logger.LogInfo("现在耐久是" + naijiu + "准备减一");
                         foreach (ITEM_INFO value in player.itemList.values)
                         {
                             if (value.uuid == danLu.Item.Uid)
                             {
                                 value.Seid.SetField("NaiJiu", naijiu - 1);
                                 danLu.Item.Seid.SetField("NaiJiu", naijiu - 1);
-                                Instance.Logger.LogInfo(value.ToString());
+                                //Instance.Logger.LogInfo(value.ToString());
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+
+            [HarmonyPrefix]
+            [HarmonyPatch("Fail")]
+            public static bool Fail_Prefix()
+            {
+                //Instance.Logger.LogInfo("啊啊啊啊啊失败算完啦");
+                DanLuSlot danLu = LianDanUIMag.Instance.LianDanPanel.DanLu;
+                KBEngine.Avatar player = Tools.instance.getPlayer();
+                if (!danLu.IsNull())
+                {
+                    int naijiu = danLu.Item.Seid["NaiJiu"].I;
+                    if (naijiu <= 1)
+                    {
+                        //Instance.Logger.LogInfo("发现丹炉耐久是加的1准备炸啦");
+                        player.removeItem(danLu.Item.Uid);
+                        danLu.SetNull();
+                        Tools.Say("{vpunch=10,0.5}在你刚刚取出残渣的时候，突然丹炉崩裂开来，幸好没有伤到人，好危险！", 0);
+                    }
+                    else
+                    {
+                        //Instance.Logger.LogInfo("现在耐久是" + naijiu + "准备减一");
+                        foreach (ITEM_INFO value in player.itemList.values)
+                        {
+                            if (value.uuid == danLu.Item.Uid)
+                            {
+                                value.Seid.SetField("NaiJiu", naijiu - 1);
+                                danLu.Item.Seid.SetField("NaiJiu", naijiu - 1);
+                                //Instance.Logger.LogInfo(value.ToString());
                             }
                         }
                     }
