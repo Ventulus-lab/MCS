@@ -635,7 +635,7 @@ namespace Ventulus
                     {
                         int tupolv = NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID);
                         if (NpcJieSuanManager.inst.npcTuPo.IsCanBigTuPo(npc.ID))
-                            zhuangtaistr = "正在突破";
+                            zhuangtaistr = "尝试突破";
                         zhuangtaistr += $"(突破率{tupolv}%)";
                     }
                 }
