@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Tab;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -88,6 +87,8 @@ namespace Ventulus
             //【协程返回控制权】
             yield return null;
 
+            int IndexPos = 0;
+
             //【新建词条子对象】
             Transform tAction = MakeNewCiTiao("Action", tShuXing);
             tAction.Find("Title").GetComponent<Text>().text = "行动:";
@@ -95,9 +96,6 @@ namespace Ventulus
 
             Transform tNianLing = MakeNewCiTiao("NianLing", tShuXing);
             tNianLing.Find("Title").GetComponent<Text>().text = "年龄:";
-
-            Transform tQingFen = MakeNewCiTiao("QingFen", tShuXing);
-            tQingFen.Find("Title").GetComponent<Text>().text = "好感:";
 
             Transform tQiXue = MakeNewCiTiao("QiXue", tShuXing);
             tQiXue.Find("Title").GetComponent<Text>().text = "气血:";
@@ -114,17 +112,21 @@ namespace Ventulus
             Transform tShenShi = MakeNewCiTiao("ShenShi", tShuXing);
             tShenShi.Find("Title").GetComponent<Text>().text = "神识:";
 
+            Transform tWuDao = MakeNewCiTiao("WuDao", tShuXing);
+            tWuDao.Find("Title").GetComponent<Text>().text = "悟道:";
+            tWuDao.gameObject.SetActive(false);
+
             //8左8右
             Transform tZhongZu = MakeNewCiTiao("ZhongZu", tShuXing);
             tZhongZu.Find("Title").GetComponent<Text>().text = "种族:";
             tZhongZu.gameObject.SetActive(false);
             //给行动空位置
 
+            Transform tQingFen = MakeNewCiTiao("QingFen", tShuXing);
+            tQingFen.Find("Title").GetComponent<Text>().text = "好感:";
+
             Transform tType = MakeNewCiTiao("Type", tShuXing);
             tType.Find("Title").GetComponent<Text>().text = "类型:";
-
-            Transform tLiuPai = MakeNewCiTiao("LiuPai", tShuXing);
-            tLiuPai.Find("Title").GetComponent<Text>().text = "流派:";
 
             Transform tXingGe = MakeNewCiTiao("XingGe", tShuXing);
             tXingGe.Find("Title").GetComponent<Text>().text = "性格:";
@@ -132,14 +134,17 @@ namespace Ventulus
             Transform tTag = MakeNewCiTiao("Tag", tShuXing);
             tTag.Find("Title").GetComponent<Text>().text = "标签:";
 
-            Transform tWuDao = MakeNewCiTiao("WuDao", tShuXing);
-            tWuDao.Find("Title").GetComponent<Text>().text = "悟道:";
-
             Transform tXiuWei = MakeNewCiTiao("XiuWei", tShuXing);
             tXiuWei.Find("Title").GetComponent<Text>().text = "修为:";
 
             Transform tZhuangTai = MakeNewCiTiao("ZhuangTai", tShuXing);
             tZhuangTai.Find("Title").GetComponent<Text>().text = "状态:";
+
+            Transform tLiuPai = MakeNewCiTiao("LiuPai", tShuXing);
+            tLiuPai.Find("Title").GetComponent<Text>().text = "流派:";
+            tLiuPai.gameObject.SetActive(false);
+
+
 
             //不显示
             //Transform tShouYuan = MakeNewCiTiao("ShouYuan", tShuXing);
@@ -150,9 +155,9 @@ namespace Ventulus
             {
                 Vector3 v3;
                 if (i < 8)
-                    v3 = new Vector3(-130f, 157.5f - 45f * i, 0);
+                    v3 = new Vector3(-130f, 135f - 45f * i, 0);
                 else
-                    v3 = new Vector3(130f, 157.5f - 45f * (i - 8), 0);
+                    v3 = new Vector3(130f, 135f - 45f * (i - 8), 0);
                 tShuXing.GetChild(i).localPosition = v3;
             }
 
@@ -162,12 +167,29 @@ namespace Ventulus
 
             //调整战斗探查信息面板
             Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
-            
+
 
             //增加种族
             Transform tZhongZu2 = MakeNewCiTiao("ZhongZu", tFightShuXing);
             tZhongZu2.Find("Title").GetComponent<Text>().text = "种族:";
-            tZhongZu2.localPosition = new Vector3(30,90,0);
+            tZhongZu2.localPosition = new Vector3(30, 67.5f, 0);
+
+            Transform tQiXue2 = tFightShuXing.Find("QiXue");
+            tQiXue2.localPosition = new Vector3(30, 22.5f, 0);
+
+            Transform tDunSu2 = tFightShuXing.Find("DunSu");
+            tDunSu2.localPosition = new Vector3(-15, -22.5f, 0);
+
+            Transform tShenShi2 = tFightShuXing.Find("ShenShi");
+            tShenShi2.localPosition = new Vector3(-15, -67.5f, 0);
+
+            Transform tXiuWei2 = tFightShuXing.Find("XiuWei");
+            tXiuWei2.localPosition = new Vector3(30, -112.5f, 0);
+
+            //增加灵根简易
+            Transform tZLingGen2 = MakeNewCiTiao("LingGen", tFightShuXing);
+            tZLingGen2.Find("Title").GetComponent<Text>().text = "灵根:";
+            tZLingGen2.localPosition = new Vector3(30, -157.5f, 0);
 
             //获取五行灵根UI
             //Instance.Logger.LogInfo("尝试获取五行灵根UI");
@@ -188,6 +210,10 @@ namespace Ventulus
                 transform.name = name;
             }
             return transform;
+        }
+        public static void IndexPosition(int index, Transform tShuXing)
+        {
+
         }
 
         public List<GameObject> IconImage = new List<GameObject>();
@@ -631,7 +657,7 @@ namespace Ventulus
                 {
                     if (NpcJieSuanManager.inst.npcTuPo.IsCanSmallTuPo(npc.ID))
                         zhuangtaistr += "(小境界突破)";
-                    else 
+                    else
                     {
                         int tupolv = NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID);
                         if (NpcJieSuanManager.inst.npcTuPo.IsCanBigTuPo(npc.ID))
@@ -665,7 +691,16 @@ namespace Ventulus
                 //种族+性别
                 tFightShuXing.Find("ZhongZu/Text").GetComponent<Text>().text = ZhongZuSex(npc);
 
-              
+                //灵根
+                string strLingGen = string.Empty;
+                List<string> linggenname = new List<string>() { "金", "木", "水", "火", "土" };
+                List<int> linggenvalue = npc.json.GetField("LingGen").ToList();
+                for (int i = 0; i < 5; i++)
+                {
+                    strLingGen += $"{linggenname[i]}{linggenvalue[i]} ";
+                }
+                tFightShuXing.Find("LingGen/Text").GetComponent<Text>().text = strLingGen;
+
                 return true;
             }
         }
