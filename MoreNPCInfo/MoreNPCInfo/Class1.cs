@@ -71,7 +71,6 @@ namespace Ventulus
             //存一个标题字体
             tCun = tShuXing.Find("Title").GetComponentInChildren<Text>().transform;
             Instance.BiaoTi = UnityEngine.Object.Instantiate<GameObject>(tCun.gameObject);
-            tCun = null;
 
 
             //开始协程
@@ -80,6 +79,8 @@ namespace Ventulus
         IEnumerator BuildCiTiao()
         {
             UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+
+            //调整【普通查看信息面板】
             Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
             //【删除所有子对象】
             tShuXing.DestoryAllChild();
@@ -165,7 +166,8 @@ namespace Ventulus
             tID.name = "ID";
             tID.localPosition = new Vector3(-230, 700, 0);
 
-            //调整战斗探查信息面板
+            //
+            //调整【战斗探查信息面板】
             Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
 
 
@@ -199,6 +201,15 @@ namespace Ventulus
             //Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
             //五行灵根
             //Transform tLingGen = UnityEngine.Object.Instantiate<GameObject>(Instance.LingGen, tFightShuXing).transform;
+
+            //
+            //调整【战斗探查信息面板】
+            Transform tZhuangBeiGongFaPanel = NPCInfoPanel.transform.Find("Panels/ZhuangBeiGongFaPanel");
+
+            //增加流派信息条
+            Transform tLiuPai3 = UnityEngine.Object.Instantiate<GameObject>(Instance.BiaoTi, tZhuangBeiGongFaPanel).transform;
+            tLiuPai3.name = "LiuPai";
+            tLiuPai3.localPosition = new Vector3(-240, 70, 0);
 
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
@@ -528,11 +539,11 @@ namespace Ventulus
         }
 
         [HarmonyPatch(typeof(UINPCInfoPanel))]
-        class UINPCInfoPanelPatch
+        class UINPCInfoPanel_Patch
         {
             [HarmonyPrefix]
-            [HarmonyPatch("SetNPCInfo")]
-            public static bool SetNPCInfoPrefix(UINPCInfoPanel __instance)
+            [HarmonyPatch(nameof(UINPCInfoPanel.SetNPCInfo))]
+            public static bool SetNPCInfo_Prefix(UINPCInfoPanel __instance)
             {
                 Instance.Logger.LogInfo("SetNPCInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
@@ -670,8 +681,8 @@ namespace Ventulus
                 return false;
             }
             [HarmonyPrefix]
-            [HarmonyPatch("SetFightInfo")]
-            public static bool SetFightInfoPrefix(UINPCInfoPanel __instance)
+            [HarmonyPatch(nameof(UINPCInfoPanel.SetFightInfo))]
+            public static bool SetFightInfo_Prefix(UINPCInfoPanel __instance)
             {
                 Instance.Logger.LogInfo("SetFightInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
@@ -704,6 +715,20 @@ namespace Ventulus
                 return true;
             }
         }
+        [HarmonyPatch(typeof(UINPCZhuangBeiGongFaPanel))]
+        class UINPCZhuangBeiGongFaPanel_Patch
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCZhuangBeiGongFaPanel.OnPanelShow))]
+            public static void OnPanelShow_Postfix(UINPCZhuangBeiGongFaPanel __instance)
+            {
+                UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
+                Transform tZhuangBeiGongFaPanel = NPCInfoPanel.transform.Find("Panels/ZhuangBeiGongFaPanel");
+                UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
 
+                //流派
+                tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
+            }
+        }
     }
 }
