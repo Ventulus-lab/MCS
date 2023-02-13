@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Ventulus
@@ -76,6 +77,7 @@ namespace Ventulus
             //开始协程
             StartCoroutine(BuildCiTiao());
         }
+        static Vector3 v3;
         IEnumerator BuildCiTiao()
         {
             UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
@@ -88,7 +90,7 @@ namespace Ventulus
             //【协程返回控制权】
             yield return null;
 
-            int IndexPos = 0;
+            //int IndexPos = 0;
 
             //【新建词条子对象】
             Transform tAction = MakeNewCiTiao("Action", tShuXing);
@@ -154,7 +156,6 @@ namespace Ventulus
 
             for (int i = 0; i < tShuXing.childCount; i++)
             {
-                Vector3 v3;
                 if (i < 8)
                     v3 = new Vector3(-130f, 135f - 45f * i, 0);
                 else
@@ -211,6 +212,23 @@ namespace Ventulus
             tLiuPai3.name = "LiuPai";
             tLiuPai3.localPosition = new Vector3(-240, 70, 0);
 
+            //装备上移
+            Transform tZhuangBei3Solt = tZhuangBeiGongFaPanel.Find("ZhuangBei3Solt");
+            v3 = tZhuangBei3Solt.localPosition;
+            v3.y = 253;
+            tZhuangBei3Solt.localPosition = v3;
+            Transform tZhuangBei4Solt = tZhuangBeiGongFaPanel.Find("ZhuangBei4Solt");
+            v3 = tZhuangBei4Solt.localPosition;
+            v3.y = 253;
+            tZhuangBei4Solt.localPosition = v3;
+
+            //增加装备偏好信息条
+            Transform tPianHao = UnityEngine.Object.Instantiate<GameObject>(Instance.BiaoTi, tZhuangBeiGongFaPanel).transform;
+            tPianHao.name = "PianHao";
+            tPianHao.localPosition = new Vector3(300, 155, 0);
+            tPianHao.GetComponent<Text>().text = "装备偏好";
+            PointerItem PI = tPianHao.gameObject.AddComponent<PointerItem>();
+
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
         {
@@ -225,6 +243,21 @@ namespace Ventulus
         public static void IndexPosition(int index, Transform tShuXing)
         {
 
+        }
+        public class PointerItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
+        {
+            public void OnPointerEnter(PointerEventData eventData)
+            {
+                if (!string.IsNullOrWhiteSpace(Desc))
+                {
+                    UToolTip.Show(Desc, 330f);
+                }
+            }
+            public void OnPointerExit(PointerEventData eventData)
+            {
+                UToolTip.Close();
+            }
+            public string Desc;
         }
 
         public List<GameObject> IconImage = new List<GameObject>();
@@ -678,6 +711,7 @@ namespace Ventulus
                 }
                 tShuXing.Find("ZhuangTai/Text").GetComponent<Text>().text = zhuangtaistr;
 
+
                 return false;
             }
             [HarmonyPrefix]
@@ -724,11 +758,46 @@ namespace Ventulus
             {
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tZhuangBeiGongFaPanel = NPCInfoPanel.transform.Find("Panels/ZhuangBeiGongFaPanel");
-                UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
+                UINPCData npc = NPCInfoPanel.npc;
 
                 //流派
                 tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
+
+                //偏好
+                List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
+                List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
+                List<int> listRingPianHao = npc.json["equipRingPianHao"].ToList();
+                string strPianHao = "武器偏好：" + Environment.NewLine;
+                foreach(int i in listWeaponPianHao)
+                {         
+                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                    strPianHao += Environment.NewLine;
+                }
+                strPianHao += Environment.NewLine + "防具偏好：" + Environment.NewLine;
+                foreach (int i in listClothingPianHao)
+                {
+                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                    strPianHao += Environment.NewLine;
+                }
+                strPianHao += Environment.NewLine + "饰品偏好：" + Environment.NewLine;
+                foreach (int i in listRingPianHao)
+                {
+                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                    strPianHao += Environment.NewLine;
+                }
+                tZhuangBeiGongFaPanel.Find("PianHao").GetComponent<PointerItem>().Desc = strPianHao;
+
             }
+        }
+        public static string GetEquipHeChengStr(int id, bool bShowInt = false)
+        {
+            JSONObject HeChengBiao = jsonData.instance.LianQiHeCheng;
+            JSONObject ShuXingLeiBie = jsonData.instance.LianQiShuXinLeiBie;
+            string strShuXing = ShuXingLeiBie[HeChengBiao[id.ToString()]["ShuXingType"].ToString()]["desc"].Str;
+            string strEquipType = HeChengBiao[id.ToString()]["ZhuShi2"].str;
+            string strXiaoGuo = HeChengBiao[id.ToString()]["ZhuShi3"].str;
+            return $"{strShuXing}·{strEquipType}·{strXiaoGuo}".ToCN();
+
         }
     }
 }
