@@ -768,8 +768,8 @@ namespace Ventulus
                 List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
                 List<int> listRingPianHao = npc.json["equipRingPianHao"].ToList();
                 string strPianHao = "武器偏好：" + Environment.NewLine;
-                foreach(int i in listWeaponPianHao)
-                {         
+                foreach (int i in listWeaponPianHao)
+                {
                     strPianHao += i.ToString() + GetEquipHeChengStr(i);
                     strPianHao += Environment.NewLine;
                 }
@@ -793,11 +793,15 @@ namespace Ventulus
         {
             JSONObject HeChengBiao = jsonData.instance.LianQiHeCheng;
             JSONObject ShuXingLeiBie = jsonData.instance.LianQiShuXinLeiBie;
-            string strShuXing = ShuXingLeiBie[HeChengBiao[id.ToString()]["ShuXingType"].ToString()]["desc"].Str;
-            string strEquipType = HeChengBiao[id.ToString()]["ZhuShi2"].str;
-            string strXiaoGuo = HeChengBiao[id.ToString()]["ZhuShi3"].str;
-            return $"{strShuXing}·{strEquipType}·{strXiaoGuo}".ToCN();
-
+            if (HeChengBiao.HasField(id.ToString()))
+            {
+                string strShuXing = ShuXingLeiBie[HeChengBiao[id.ToString()]["ShuXingType"].ToString()]["desc"].Str;
+                string strEquipType = HeChengBiao[id.ToString()]["ZhuShi2"].str;
+                string strXiaoGuo = HeChengBiao[id.ToString()]["ZhuShi3"].str;
+                return $"{strShuXing}·{strEquipType}·{strXiaoGuo}".ToCN();
+            }
+            else
+                return "未知";
         }
     }
 }
