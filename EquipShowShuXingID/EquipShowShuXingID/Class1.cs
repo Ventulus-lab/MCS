@@ -17,12 +17,9 @@ namespace Ventulus
     {
         void Start()
         {
-            //输出日志
             Logger.LogInfo("装备显示属性ID加载成功！");
             var harmony = new Harmony("Ventulus.MCS.EquipShowShuXingID");
             harmony.PatchAll();
-
-
         }
 
         public static EquipShowShuXingID Instance;
@@ -45,7 +42,6 @@ namespace Ventulus
                     //Instance.Logger.LogInfo(baseItem.Seid.ToString());
                     if (baseItem.Seid.HasField("shuXingIdList"))
                     {
-                        
                         listShuXingID = baseItem.Seid["shuXingIdList"].ToList();
                         __instance.Desc2.AddText(Environment.NewLine);
                         __instance.Desc2.AddText("属性ID：");

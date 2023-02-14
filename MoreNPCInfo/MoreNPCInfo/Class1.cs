@@ -229,6 +229,8 @@ namespace Ventulus
             tPianHao.GetComponent<Text>().text = "装备偏好";
             PointerItem PI = tPianHao.gameObject.AddComponent<PointerItem>();
 
+            //
+
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
         {
@@ -791,6 +793,7 @@ namespace Ventulus
         }
         public static string GetEquipHeChengStr(int id, bool bShowInt = false)
         {
+            //根据装备属性ID生成中文词条
             JSONObject HeChengBiao = jsonData.instance.LianQiHeCheng;
             JSONObject ShuXingLeiBie = jsonData.instance.LianQiShuXinLeiBie;
             if (HeChengBiao.HasField(id.ToString()))
@@ -802,6 +805,49 @@ namespace Ventulus
             }
             else
                 return "未知";
+        }
+
+        [HarmonyPatch(typeof(UINPCWuDaoPanel))]
+        class UINPCWuDaoPanel_Patch
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCWuDaoPanel.OnPanelShow))]
+            public static void OnPanelShow_Postfix(UINPCWuDaoPanel __instance)
+            {
+                //调整【悟道面板】
+                //因为每次内容都会清空，只能即时增加一条对象。改名悟道类型
+                Transform tWuDaoLeiXing = UnityEngine.Object.Instantiate<GameObject>(__instance.SVItemPrefab, __instance.ContentRT).transform;
+                tWuDaoLeiXing.name = "WuDaoLeiXing";
+                tWuDaoLeiXing.SetAsFirstSibling();
+
+                UINPCWuDaoSVItem WuDaoSVItem = tWuDaoLeiXing.GetComponent<UINPCWuDaoSVItem>();
+                //Instance.Logger.LogInfo(WuDaoSVItem.WuDaoTypeSprites.Count);
+                WuDaoSVItem.TypeImage.gameObject.SetActive(false);
+
+                UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
+                int wudao = 0;
+                if (npc.json.HasField("wudaoType"))
+                    wudao = npc.json.GetField("wudaoType").I;
+                string strWuDaoLeiXing = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + (ShowStringInt.Value ? wudao.ToString() : "");
+                WuDaoSVItem.LevelText.text = "悟道类型";
+                WuDaoSVItem.SkillText.text = "#s34#cb47a39" + strWuDaoLeiXing;
+
+            }
+        }
+
+        [HarmonyPatch(typeof(UINPCWuDaoSVItem))]
+        class UINPCWuDaoSVItem_Patch
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCWuDaoSVItem.SetWuDao))]
+            public static void SetWuDao_Postfix(UINPCWuDaoSVItem __instance, UINPCWuDaoData data)
+            {
+                //显示npc每一种悟道的经验
+                int nextexp = jsonData.instance.WuDaoJinJieJson[data.Level]["Max"].I;
+                string strExp = "#s34#cb47a39经验 #n" + data.Exp.ToString() + (data.Level < 5 ? $"/{nextexp}" : "") + Environment.NewLine;
+                __instance.SkillText.text += strExp;
+
+            }
         }
     }
 }
