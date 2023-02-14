@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using JSONClass;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -564,11 +565,11 @@ namespace Ventulus
             else if (AvatarType == 4)
                 ZhongZu = "鬼族";
             if (SexType == 1)
-                ZhongZu = ZhongZu + "男";
+                ZhongZu += "男";
             else if (SexType == 2)
-                ZhongZu = ZhongZu + "女";
+                ZhongZu += "女";
             else if (SexType == 3)
-                ZhongZu = ZhongZu + "变态";
+                ZhongZu += "变态";
             if (ZhongZu == string.Empty)
                 ZhongZu = "未知";
             return ZhongZu;
@@ -761,16 +762,22 @@ namespace Ventulus
             {
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tZhuangBeiGongFaPanel = NPCInfoPanel.transform.Find("Panels/ZhuangBeiGongFaPanel");
-                UINPCData npc = NPCInfoPanel.npc;
+                UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
                 Instance.Logger.LogInfo(npc.json.ToString().ToCN());
-
-
-                if (npc.json.HasField("LiuPai") && npc.json.HasField("equipWeaponPianHao"))
+                if (npc.json.HasField("LiuPai"))
                 {
                     //流派
                     tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(true);
                     tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
+                }
+                else
+                {
+                    //遇到怪物没有人的信息
+                    tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(false);
+                }
 
+                if (npc.json.HasField("equipWeaponPianHao"))
+                {
                     //偏好
                     tZhuangBeiGongFaPanel.Find("PianHao").gameObject.SetActive(true);
                     List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
@@ -799,9 +806,7 @@ namespace Ventulus
                 else
                 {
                     //遇到怪物没有人的信息
-                    tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(false);
                     tZhuangBeiGongFaPanel.Find("PianHao").gameObject.SetActive(false);
-                    return;
                 }
 
             }
@@ -838,7 +843,7 @@ namespace Ventulus
                 UINPCWuDaoSVItem WuDaoSVItem = tWuDaoLeiXing.GetComponent<UINPCWuDaoSVItem>();
                 //Instance.Logger.LogInfo(WuDaoSVItem.WuDaoTypeSprites.Count);
                 WuDaoSVItem.TypeImage.gameObject.SetActive(false);
-
+                //tWuDaoLeiXing.Find("Head").gameObject.SetActive(false);
                 UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
                 int wudao = 0;
                 if (npc.json.HasField("wudaoType"))
@@ -847,6 +852,13 @@ namespace Ventulus
                 WuDaoSVItem.LevelText.text = "悟道类型";
                 WuDaoSVItem.SkillText.text = "#s34#cb47a39" + strWuDaoLeiXing;
 
+                Transform tDao = UnityEngine.Object.Instantiate<GameObject>(WuDaoSVItem.LevelText.gameObject, tWuDaoLeiXing.Find("Title/Head")).transform;
+                tDao.name = "Dao";
+                tDao.localPosition = Vector3.zero;
+                Text Dao = tDao.GetComponent<Text>();
+                Dao.text = "道";
+                Dao.color = new Color(132f / 255f, 94f / 255f, 33f / 225f, 1f);
+                Dao.fontStyle = FontStyle.Bold;
             }
         }
 
@@ -875,16 +887,72 @@ namespace Ventulus
                 //调整【重要事件面板】
                 //因为每次内容都会清空，只能即时增加一条对象。
 
-                Transform tNaiYao = UnityEngine.Object.Instantiate<GameObject>(__instance.SVItemPrefab, __instance.ContentRT).transform;
-                tNaiYao.name = "WuDaoLeiXing";
-                tNaiYao.SetAsFirstSibling();
-                tNaiYao.gameObject.SetActive(false);
-                UINPCEventSVItem EventSVItem = tNaiYao.GetComponent<UINPCEventSVItem>();
-                EventSVItem.SetEvent($"耐药性", "");
+
+
+                //耐药性结果字符串字典
+                Dictionary<int, string> DanYaoSeidToNaiYaoStr = new Dictionary<int, string>();
+
                 UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
+
+                if (npc.json.HasField("useItem") && !npc.json["useItem"].IsNull)
+                {
+                    //遍历每一个已使用过的药
+                    JSONObject jsuseItem = npc.json.GetField("useItem");
+                    foreach (string item in jsuseItem.keys)
+                    {
+                        _ItemJsonData ItemJson = _ItemJsonData.DataDict[int.Parse(item)];
+
+                        //获取最大耐药性
+                        int maxNaiYao = ItemJson.CanUse;
+                        if (npc.json["wuDaoSkillList"].ToList().Contains(2131))
+                        {
+                            maxNaiYao *= 2;
+                        }
+                        if (maxNaiYao > 0)
+                        {
+                            //将药按效果分类，词条加入字典
+                            int seid = item == "5523" ? ItemJson.seid[1] : ItemJson.seid[0];//避劫丹有两个效果用第二个，其它丹药用第一个
+                            string danyaonaiyao = $"{ItemJson.name}({jsuseItem[item].I}/{maxNaiYao})  ";
+                            if (DanYaoSeidToNaiYaoStr.ContainsKey(seid))
+                            {
+                                DanYaoSeidToNaiYaoStr[seid] += danyaonaiyao;
+                            }
+                            else
+                            {
+                                DanYaoSeidToNaiYaoStr.Add(seid, danyaonaiyao);
+                            }
+                        }
+                    }
+
+                    //按耐药性结果字符串字典增加事件对象
+                    Transform tNaiYao;
+                    if (DanYaoSeidToNaiYaoStr.Count > 0)
+                        foreach (KeyValuePair<int, string> strNaiYao in DanYaoSeidToNaiYaoStr)
+                        {
+                            tNaiYao = UnityEngine.Object.Instantiate<GameObject>(__instance.SVItemPrefab, __instance.ContentRT).transform;
+                            tNaiYao.name = "NaiYao";
+                            tNaiYao.SetAsFirstSibling();
+                            int seidkey = DanYaoSeidToCN.ContainsKey(strNaiYao.Key) ? strNaiYao.Key : 0;
+                            tNaiYao.GetComponent<UINPCEventSVItem>().SetEvent(DanYaoSeidToCN[seidkey], strNaiYao.Value);
+                        }
+                }
 
 
             }
         }
+        private static Dictionary<int, string> DanYaoSeidToCN = new Dictionary<int, string>()
+        {
+            {0,"其他药"},
+            {4,"修为药"},
+            {5,"神识药"},
+            {6,"气血药"},
+            {7,"寿元药"},
+            {9,"资质药"},
+            {10,"悟性药"},
+            {11,"遁速药"},
+            {25,"悟道经验药"},
+            {26,"悟道点药"},
+            {37,"避劫丹"},
+        };
     }
 }
