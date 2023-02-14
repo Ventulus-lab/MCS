@@ -211,6 +211,7 @@ namespace Ventulus
             Transform tLiuPai3 = UnityEngine.Object.Instantiate<GameObject>(Instance.BiaoTi, tZhuangBeiGongFaPanel).transform;
             tLiuPai3.name = "LiuPai";
             tLiuPai3.localPosition = new Vector3(-240, 70, 0);
+            tLiuPai3.GetComponent<Text>().text = "流派：";
 
             //装备上移
             Transform tZhuangBei3Solt = tZhuangBeiGongFaPanel.Find("ZhuangBei3Solt");
@@ -589,7 +590,7 @@ namespace Ventulus
                 NPCInfoPanel.FightShuXing.SetActive(false);
 
                 Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
-                Instance.Logger.LogInfo(npc.json.ToString().ToCN());
+                //Instance.Logger.LogInfo(npc.json.ToString().ToCN());
 
 
                 //称号
@@ -723,9 +724,9 @@ namespace Ventulus
                 Instance.Logger.LogInfo("SetFightInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
-                //手动激活普通的查看属性
-                NPCInfoPanel.ShuXing.SetActive(false);
-                NPCInfoPanel.FightShuXing.SetActive(true);
+                //手动激活战斗的查看属性
+                //NPCInfoPanel.ShuXing.SetActive(false);
+                //NPCInfoPanel.FightShuXing.SetActive(true);
 
                 UINPCData npc = __instance.npc;
                 Instance.Logger.LogInfo(npc.json.ToString().ToCN());
@@ -761,33 +762,47 @@ namespace Ventulus
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tZhuangBeiGongFaPanel = NPCInfoPanel.transform.Find("Panels/ZhuangBeiGongFaPanel");
                 UINPCData npc = NPCInfoPanel.npc;
+                Instance.Logger.LogInfo(npc.json.ToString().ToCN());
 
-                //流派
-                tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
 
-                //偏好
-                List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
-                List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
-                List<int> listRingPianHao = npc.json["equipRingPianHao"].ToList();
-                string strPianHao = "武器偏好：" + Environment.NewLine;
-                foreach (int i in listWeaponPianHao)
+                if (npc.json.HasField("LiuPai") && npc.json.HasField("equipWeaponPianHao"))
                 {
-                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
-                    strPianHao += Environment.NewLine;
+                    //流派
+                    tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(true);
+                    tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
+
+                    //偏好
+                    tZhuangBeiGongFaPanel.Find("PianHao").gameObject.SetActive(true);
+                    List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
+                    List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
+                    List<int> listRingPianHao = npc.json["equipRingPianHao"].ToList();
+                    string strPianHao = "武器偏好：" + Environment.NewLine;
+                    foreach (int i in listWeaponPianHao)
+                    {
+                        strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                        strPianHao += Environment.NewLine;
+                    }
+                    strPianHao += Environment.NewLine + "防具偏好：" + Environment.NewLine;
+                    foreach (int i in listClothingPianHao)
+                    {
+                        strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                        strPianHao += Environment.NewLine;
+                    }
+                    strPianHao += Environment.NewLine + "饰品偏好：" + Environment.NewLine;
+                    foreach (int i in listRingPianHao)
+                    {
+                        strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                        strPianHao += Environment.NewLine;
+                    }
+                    tZhuangBeiGongFaPanel.Find("PianHao").GetComponent<PointerItem>().Desc = strPianHao;
                 }
-                strPianHao += Environment.NewLine + "防具偏好：" + Environment.NewLine;
-                foreach (int i in listClothingPianHao)
+                else
                 {
-                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
-                    strPianHao += Environment.NewLine;
+                    //遇到怪物没有人的信息
+                    tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(false);
+                    tZhuangBeiGongFaPanel.Find("PianHao").gameObject.SetActive(false);
+                    return;
                 }
-                strPianHao += Environment.NewLine + "饰品偏好：" + Environment.NewLine;
-                foreach (int i in listRingPianHao)
-                {
-                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
-                    strPianHao += Environment.NewLine;
-                }
-                tZhuangBeiGongFaPanel.Find("PianHao").GetComponent<PointerItem>().Desc = strPianHao;
 
             }
         }
@@ -846,6 +861,28 @@ namespace Ventulus
                 int nextexp = jsonData.instance.WuDaoJinJieJson[data.Level]["Max"].I;
                 string strExp = "#s34#cb47a39经验 #n" + data.Exp.ToString() + (data.Level < 5 ? $"/{nextexp}" : "") + Environment.NewLine;
                 __instance.SkillText.text += strExp;
+
+            }
+        }
+
+        [HarmonyPatch(typeof(UINPCEventPanel))]
+        class UINPCEventPanel_Patch
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCEventPanel.OnPanelShow))]
+            public static void OnPanelShow_Postfix(UINPCEventPanel __instance)
+            {
+                //调整【重要事件面板】
+                //因为每次内容都会清空，只能即时增加一条对象。
+
+                Transform tNaiYao = UnityEngine.Object.Instantiate<GameObject>(__instance.SVItemPrefab, __instance.ContentRT).transform;
+                tNaiYao.name = "WuDaoLeiXing";
+                tNaiYao.SetAsFirstSibling();
+                tNaiYao.gameObject.SetActive(false);
+                UINPCEventSVItem EventSVItem = tNaiYao.GetComponent<UINPCEventSVItem>();
+                EventSVItem.SetEvent($"耐药性", "");
+                UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
+
 
             }
         }
