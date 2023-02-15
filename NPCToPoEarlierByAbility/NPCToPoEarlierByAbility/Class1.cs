@@ -38,18 +38,95 @@ namespace Ventulus
                 var codes = new List<CodeInstruction>(instructions);
                 Instance.Logger.LogInfo("NPCTuPo.GetNpcBigTuPoLv共计IL指令数量" + codes.Count);
 
-                if (true)
+                //允许固定NPC凭本事突破，突破率不再固定-1
+                for (var i = 0; i < codes.Count; i++)
                 {
-                    //允许固定NPC凭本事突破
-                    for (var i = 0; i < codes.Count; i++)
+                    //Instance.Logger.LogInfo(codes[i].ToString());
+                    if (codes[i].opcode == OpCodes.Ret && codes[i - 1].opcode == OpCodes.Ldc_I4_M1)
                     {
-                        //Instance.Logger.LogInfo(codes[i].ToString());
-                        if (codes[i].opcode == OpCodes.Ret && codes[i - 1].opcode == OpCodes.Ldc_I4_M1)
-                        {
-                            Instance.Logger.LogInfo("找到返回-1指令开始删除");
-                            codes[i].opcode = OpCodes.Nop;
-                            codes[i - 1].opcode = OpCodes.Nop;
-                        }
+                        Instance.Logger.LogInfo("找到返回-1指令开始删除，突破率不再固定-1");
+                        codes[i].opcode = OpCodes.Nop;
+                        codes[i - 1].opcode = OpCodes.Nop;
+                    }
+                }
+                return codes.AsEnumerable();
+            }
+
+            [HarmonyPatch(nameof(NPCTuPo.NpcTuPoZhuJi))]
+            [HarmonyTranspiler]
+            public static IEnumerable<CodeInstruction> NpcTuPoZhuJi_Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var codes = new List<CodeInstruction>(instructions);
+                Instance.Logger.LogInfo("NPCTuPo.NpcTuPoZhuJi共计IL指令数量" + codes.Count);
+
+                //允许固定NPC在未到保送时间时突破筑基
+                for (var i = 0; i < codes.Count; i++)
+                {
+                    //Instance.Logger.LogInfo(codes[i].ToString());
+                    if (codes[i].opcode == OpCodes.Ret && codes[i - 1].opcode == OpCodes.Br)
+                    {
+                        Instance.Logger.LogInfo("找到限制固定npc突破筑基指令开始删除");
+                        codes[i].opcode = OpCodes.Nop;
+                    }
+                }
+                return codes.AsEnumerable();
+            }
+
+            [HarmonyPatch(nameof(NPCTuPo.NpcTuPoJinDan))]
+            [HarmonyTranspiler]
+            public static IEnumerable<CodeInstruction> NpcTuPoJinDan_Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var codes = new List<CodeInstruction>(instructions);
+                Instance.Logger.LogInfo("NPCTuPo.NpcTuPoJinDan共计IL指令数量" + codes.Count);
+
+                //允许固定NPC在未到保送时间时突破金丹
+                for (var i = 0; i < codes.Count; i++)
+                {
+                    //Instance.Logger.LogInfo(codes[i].ToString());
+                    if (codes[i].opcode == OpCodes.Ret && codes[i - 1].opcode == OpCodes.Br)
+                    {
+                        Instance.Logger.LogInfo("找到限制固定npc突破金丹指令开始删除");
+                        codes[i].opcode = OpCodes.Nop;
+                    }
+                }
+                return codes.AsEnumerable();
+            }
+
+            [HarmonyPatch(nameof(NPCTuPo.NpcTuPoYuanYing))]
+            [HarmonyTranspiler]
+            public static IEnumerable<CodeInstruction> NpcTuPoYuanYing_Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var codes = new List<CodeInstruction>(instructions);
+                Instance.Logger.LogInfo("NPCTuPo.NpcTuPoYuanYing共计IL指令数量" + codes.Count);
+
+                //允许固定NPC在未到保送时间时突破元婴
+                for (var i = 0; i < codes.Count; i++)
+                {
+                    //Instance.Logger.LogInfo(codes[i].ToString());
+                    if (codes[i].opcode == OpCodes.Ret && codes[i - 1].opcode == OpCodes.Br)
+                    {
+                        Instance.Logger.LogInfo("找到限制固定npc突破元婴指令开始删除");
+                        codes[i].opcode = OpCodes.Nop;
+                    }
+                }
+                return codes.AsEnumerable();
+            }
+
+            [HarmonyPatch(nameof(NPCTuPo.NpcTuPoHuaShen))]
+            [HarmonyTranspiler]
+            public static IEnumerable<CodeInstruction> NpcTuPoHuaShen_Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var codes = new List<CodeInstruction>(instructions);
+                Instance.Logger.LogInfo("NPCTuPo.NpcTuPoHuaShen共计IL指令数量" + codes.Count);
+
+                //允许固定NPC在未到保送时间时突破元婴
+                for (var i = 0; i < codes.Count; i++)
+                {
+                    //Instance.Logger.LogInfo(codes[i].ToString());
+                    if (codes[i].opcode == OpCodes.Ret && codes[i - 1].opcode == OpCodes.Br)
+                    {
+                        Instance.Logger.LogInfo("找到限制固定npc突破化神指令开始删除");
+                        codes[i].opcode = OpCodes.Nop;
                     }
                 }
                 return codes.AsEnumerable();
@@ -66,17 +143,14 @@ namespace Ventulus
                 var codes = new List<CodeInstruction>(instructions);
                 Instance.Logger.LogInfo("NpcJieSuanManager.GuDingAddExp共计IL指令数量" + codes.Count);
 
-                if (true)
+                //关闭固定NPC修炼额外加速
+                for (var i = 0; i < codes.Count; i++)
                 {
-                    //关闭固定NPC修炼额外加速
-                    for (var i = 0; i < codes.Count; i++)
+                    //Instance.Logger.LogInfo(codes[i].ToString());
+                    if (codes[i].opcode == OpCodes.Ldloc_2 && codes[i + 2].opcode == OpCodes.Bne_Un)
                     {
-                        //Instance.Logger.LogInfo(codes[i].ToString());
-                        if (codes[i].opcode == OpCodes.Ldloc_2 && codes[i + 2].opcode == OpCodes.Bne_Un)
-                        {
-                            Instance.Logger.LogInfo("找到判断境界指令开始跳过");
-                            codes[i + 1].opcode = OpCodes.Ldc_I4_0;
-                        }
+                        Instance.Logger.LogInfo("找到判断境界指令开始修改，固定NPC无法获得修炼额外加速");
+                        codes[i + 1].opcode = OpCodes.Ldc_I4_0;
                     }
                 }
                 return codes.AsEnumerable();
