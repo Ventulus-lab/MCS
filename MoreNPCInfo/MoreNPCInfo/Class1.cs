@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+
 namespace Ventulus
 {
     [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "MoreNPCInfo", "1.0")]
@@ -96,74 +97,66 @@ namespace Ventulus
             //【新建词条子对象】
             Transform tAction = MakeNewCiTiao("Action", tShuXing);
             tAction.Find("Title").GetComponent<Text>().text = "行动:";
-            //占据第一行
-
-            Transform tNianLing = MakeNewCiTiao("NianLing", tShuXing);
-            tNianLing.Find("Title").GetComponent<Text>().text = "年龄:";
-
-            Transform tQiXue = MakeNewCiTiao("QiXue", tShuXing);
-            tQiXue.Find("Title").GetComponent<Text>().text = "气血:";
-
-            Transform tZiZhi = MakeNewCiTiao("ZiZhi", tShuXing);
-            tZiZhi.Find("Title").GetComponent<Text>().text = "资质:";
-
-            Transform tWuXing = MakeNewCiTiao("WuXing", tShuXing);
-            tWuXing.Find("Title").GetComponent<Text>().text = "悟性:";
-
-            Transform tDunSu = MakeNewCiTiao("DunSu", tShuXing);
-            tDunSu.Find("Title").GetComponent<Text>().text = "遁速:";
-
-            Transform tShenShi = MakeNewCiTiao("ShenShi", tShuXing);
-            tShenShi.Find("Title").GetComponent<Text>().text = "神识:";
-
-            Transform tWuDao = MakeNewCiTiao("WuDao", tShuXing);
-            tWuDao.Find("Title").GetComponent<Text>().text = "悟道:";
-            tWuDao.gameObject.SetActive(false);
-
-            //8左8右
-            Transform tZhongZu = MakeNewCiTiao("ZhongZu", tShuXing);
-            tZhongZu.Find("Title").GetComponent<Text>().text = "种族:";
-            tZhongZu.gameObject.SetActive(false);
-            //给行动空位置
-
-            Transform tQingFen = MakeNewCiTiao("QingFen", tShuXing);
-            tQingFen.Find("Title").GetComponent<Text>().text = "好感:";
-
-            Transform tType = MakeNewCiTiao("Type", tShuXing);
-            tType.Find("Title").GetComponent<Text>().text = "类型:";
-
-            Transform tXingGe = MakeNewCiTiao("XingGe", tShuXing);
-            tXingGe.Find("Title").GetComponent<Text>().text = "性格:";
-
-            Transform tTag = MakeNewCiTiao("Tag", tShuXing);
-            tTag.Find("Title").GetComponent<Text>().text = "标签:";
-
-            Transform tXiuWei = MakeNewCiTiao("XiuWei", tShuXing);
-            tXiuWei.Find("Title").GetComponent<Text>().text = "修为:";
+            IndexPosition(tAction, 1);
 
             Transform tZhuangTai = MakeNewCiTiao("ZhuangTai", tShuXing);
             tZhuangTai.Find("Title").GetComponent<Text>().text = "状态:";
+            IndexPosition(tZhuangTai, 2);
 
-            Transform tLiuPai = MakeNewCiTiao("LiuPai", tShuXing);
-            tLiuPai.Find("Title").GetComponent<Text>().text = "流派:";
-            tLiuPai.gameObject.SetActive(false);
+            Transform tNianLing = MakeNewCiTiao("NianLing", tShuXing);
+            tNianLing.Find("Title").GetComponent<Text>().text = "年龄:";
+            IndexPosition(tNianLing, 3);
+
+            Transform tQiXue = MakeNewCiTiao("QiXue", tShuXing);
+            tQiXue.Find("Title").GetComponent<Text>().text = "气血:";
+            IndexPosition(tQiXue, 4);
+
+            Transform tZiZhi = MakeNewCiTiao("ZiZhi", tShuXing);
+            tZiZhi.Find("Title").GetComponent<Text>().text = "资质:";
+            IndexPosition(tZiZhi, 5);
+
+            Transform tWuXing = MakeNewCiTiao("WuXing", tShuXing);
+            tWuXing.Find("Title").GetComponent<Text>().text = "悟性:";
+            IndexPosition(tWuXing, 6);
+
+            Transform tDunSu = MakeNewCiTiao("DunSu", tShuXing);
+            tDunSu.Find("Title").GetComponent<Text>().text = "遁速:";
+            IndexPosition(tDunSu, 7);
+
+            Transform tShenShi = MakeNewCiTiao("ShenShi", tShuXing);
+            tShenShi.Find("Title").GetComponent<Text>().text = "神识:";
+            IndexPosition(tShenShi, 8);
+
+
+            //8左8右
+
+            Transform tQingFen = MakeNewCiTiao("QingFen", tShuXing);
+            tQingFen.Find("Title").GetComponent<Text>().text = "好感:";
+            IndexPosition(tQingFen, 11);
+
+            Transform tGuanXi = MakeNewCiTiao("GuanXi", tShuXing);
+            tGuanXi.Find("Title").GetComponent<Text>().text = "关系:";
+            IndexPosition(tGuanXi, 12);
+
+            Transform tXingGe = MakeNewCiTiao("XingGe", tShuXing);
+            tXingGe.Find("Title").GetComponent<Text>().text = "性格:";
+            IndexPosition(tXingGe, 13);
+
+            Transform tXiuWei = MakeNewCiTiao("XiuWei", tShuXing);
+            tXiuWei.Find("Title").GetComponent<Text>().text = "修为:";
+            IndexPosition(tXiuWei, 14);
+
+            Transform tType = MakeNewCiTiao("Type", tShuXing);
+            tType.Find("Title").GetComponent<Text>().text = "类型:";
+            IndexPosition(tType, 15);
+
+            Transform tTag = MakeNewCiTiao("Tag", tShuXing);
+            tTag.Find("Title").GetComponent<Text>().text = "标签:";
+            IndexPosition(tTag, 16);
 
 
 
-            //不显示
-            //Transform tShouYuan = MakeNewCiTiao("ShouYuan", tShuXing);
-            //tShouYuan.Find("Title").GetComponent<Text>().text = "寿元:";
-            //tShouYuan.gameObject.SetActive(false);
-
-            for (int i = 0; i < tShuXing.childCount; i++)
-            {
-                if (i < 8)
-                    v3 = new Vector3(-130f, 135f - 45f * i, 0);
-                else
-                    v3 = new Vector3(130f, 135f - 45f * (i - 8), 0);
-                tShuXing.GetChild(i).localPosition = v3;
-            }
-
+            //左上角id显示
             Transform tID = UnityEngine.Object.Instantiate<GameObject>(Instance.BiaoTi, tShuXing).transform;
             tID.name = "ID";
             tID.localPosition = new Vector3(-230, 700, 0);
@@ -229,9 +222,8 @@ namespace Ventulus
             tPianHao.name = "PianHao";
             tPianHao.localPosition = new Vector3(300, 155, 0);
             tPianHao.GetComponent<Text>().text = "装备偏好";
-            PointerItem PI = tPianHao.gameObject.AddComponent<PointerItem>();
+            tPianHao.gameObject.AddComponent<PointerItem>();
 
-            //
 
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing)
@@ -244,9 +236,13 @@ namespace Ventulus
             }
             return transform;
         }
-        public static void IndexPosition(int index, Transform tShuXing)
+        public static void IndexPosition(Transform tCiTiao, int index)
         {
-
+            if (index < 9)
+                v3 = new Vector3(-130f, 202.5f - 45f * index, 0);
+            else
+                v3 = new Vector3(130f, 202.5f - 45f * (index - 8), 0);
+            tCiTiao.localPosition = v3;
         }
         public class PointerItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
         {
@@ -602,8 +598,7 @@ namespace Ventulus
                 //ID
                 tShuXing.Find("ID").GetComponent<Text>().text = npc.ID.ToString() + (npc.IsZhongYaoNPC ? $"({npc.ZhongYaoNPCID})" : "");
 
-                //种族+性别
-                tShuXing.Find("ZhongZu/Text").GetComponent<Text>().text = ZhongZuSex(npc);
+
 
                 //年龄+寿元
                 tShuXing.Find("NianLing/Text").GetComponent<Text>().text = npc.Age.ToString() + "/" + npc.ShouYuan.ToString();
@@ -632,6 +627,57 @@ namespace Ventulus
                 tShuXing.Find("ShenShi/Text").GetComponent<Text>().text = npc.ShenShi.ToString();
 
                 //行动
+
+
+                tShuXing.Find("Action/Text").GetComponent<Text>().text = MakeNPCAtionStr(npc) + (ShowStringInt.Value ? npc.ActionID.ToString() : "");
+
+                //类型
+                tShuXing.Find("Type/Text").GetComponent<Text>().text = (NPCType.ContainsKey(npc.NPCType) ? NPCType[npc.NPCType] : "未知") + (ShowStringInt.Value ? npc.NPCType.ToString() : "");
+
+
+                //性格
+                tShuXing.Find("XingGe/Text").GetComponent<Text>().text = (NPCXingGe.ContainsKey(npc.XingGe) ? NPCXingGe[npc.XingGe] : "未知") + (ShowStringInt.Value ? npc.XingGe.ToString() : "") + (npc.XingGe < 10 ? "(正)" : "(邪)");
+
+                //标签
+                tShuXing.Find("Tag/Text").GetComponent<Text>().text = (NPCTag.ContainsKey(npc.Tag) ? NPCTag[npc.Tag] : "未知") + (ShowStringInt.Value ? npc.Tag.ToString() : "");
+
+
+
+                //修为
+                //"MaxExp":194400000最大值刚刚好用int装下，但要是*100就不够了
+                long maxexp = jsonData.instance.LevelUpDataJsonData[npc.Level.ToString()]["MaxExp"].i;
+                long percent = npc.json.GetField("exp").i * 100 / maxexp;
+                //Instance.Logger.LogInfo("境界" + npc.Level + "最大修为"+ maxexp + "NPC当前修为" + npc.Exp);
+                //Instance.Logger.LogInfo(jsonData.instance.LevelUpDataJsonData.ToString());
+                tShuXing.Find("XiuWei/Text").GetComponent<Text>().text = npc.LevelStr + "(" + percent + "%)";
+
+                //状态
+                string zhuangtaistr = (NPCStatus.ContainsKey(npc.ZhuangTai) ? NPCStatus[npc.ZhuangTai] : "未知");
+                int time = 0;
+                if (npc.json.HasField("Status"))
+                    time = npc.json["Status"]["StatusTime"].I;
+                if (time <= 1200 && time > 0)
+                    zhuangtaistr += "(" + time + "个月)";
+                if (npc.ZhuangTai == 2)
+                {
+                    if (NpcJieSuanManager.inst.npcTuPo.IsCanSmallTuPo(npc.ID))
+                        zhuangtaistr += "(小境界突破)";
+                    else
+                    {
+                        int tupolv = NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID);
+                        if (NpcJieSuanManager.inst.npcTuPo.IsCanBigTuPo(npc.ID))
+                            zhuangtaistr = "准备突破";
+                        zhuangtaistr += $"(突破率{tupolv}%)";
+                    }
+                }
+                tShuXing.Find("ZhuangTai/Text").GetComponent<Text>().text = zhuangtaistr;
+
+
+                return false;
+            }
+
+            private static string MakeNPCAtionStr(UINPCData npc)
+            {
                 string actionstr = NPCAction.ContainsKey(npc.ActionID) ? NPCAction[npc.ActionID] : "未知";
                 string placestr = string.Empty;
                 foreach (var dian in from int dian in NpcJieSuanManager.inst.npcMap.bigMapNPCDictionary.Keys
@@ -665,58 +711,7 @@ namespace Ventulus
                     placestr = "在" + jsonData.instance.SceneNameJsonData[fuben]["MapName"].str.ToCN() + "的第" + pos.ToString() + "位置";
                     break;
                 }
-
-                tShuXing.Find("Action/Text").GetComponent<Text>().text = (placestr == string.Empty ? "" : placestr) + actionstr + (ShowStringInt.Value ? npc.ActionID.ToString() : "");
-
-                //类型
-                tShuXing.Find("Type/Text").GetComponent<Text>().text = (NPCType.ContainsKey(npc.NPCType) ? NPCType[npc.NPCType] : "未知") + (ShowStringInt.Value ? npc.NPCType.ToString() : "");
-
-                //流派
-                tShuXing.Find("LiuPai/Text").GetComponent<Text>().text = (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
-
-                //性格
-                tShuXing.Find("XingGe/Text").GetComponent<Text>().text = (NPCXingGe.ContainsKey(npc.XingGe) ? NPCXingGe[npc.XingGe] : "未知") + (ShowStringInt.Value ? npc.XingGe.ToString() : "") + (npc.XingGe < 10 ? "(正)" : "(邪)");
-
-                //标签
-                tShuXing.Find("Tag/Text").GetComponent<Text>().text = (NPCTag.ContainsKey(npc.Tag) ? NPCTag[npc.Tag] : "未知") + (ShowStringInt.Value ? npc.Tag.ToString() : "");
-
-                //悟道类型
-                int wudao = 0;
-                if (npc.json.HasField("wudaoType"))
-                    wudao = npc.json.GetField("wudaoType").I;
-                tShuXing.Find("WuDao/Text").GetComponent<Text>().text = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + (ShowStringInt.Value ? wudao.ToString() : "");
-
-                //修为
-                //"MaxExp":194400000最大值刚刚好用int装下，但要是*100就不够了
-                long maxexp = jsonData.instance.LevelUpDataJsonData[npc.Level.ToString()]["MaxExp"].i;
-                long percent = npc.json.GetField("exp").i * 100 / maxexp;
-                //Instance.Logger.LogInfo("境界" + npc.Level + "最大修为"+ maxexp + "NPC当前修为" + npc.Exp);
-                //Instance.Logger.LogInfo(jsonData.instance.LevelUpDataJsonData.ToString());
-                tShuXing.Find("XiuWei/Text").GetComponent<Text>().text = npc.LevelStr + "(" + percent + "%)";
-
-                //状态
-                string zhuangtaistr = (NPCStatus.ContainsKey(npc.ZhuangTai) ? NPCStatus[npc.ZhuangTai] : "未知");
-                int time = 0;
-                if (npc.json.HasField("Status"))
-                    time = npc.json["Status"]["StatusTime"].I;
-                if (time <= 1200 && time > 0)
-                    zhuangtaistr += "(" + time + "个月)";
-                if (npc.ZhuangTai == 2)
-                {
-                    if (NpcJieSuanManager.inst.npcTuPo.IsCanSmallTuPo(npc.ID))
-                        zhuangtaistr += "(小境界突破)";
-                    else
-                    {
-                        int tupolv = NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID);
-                        if (NpcJieSuanManager.inst.npcTuPo.IsCanBigTuPo(npc.ID))
-                            zhuangtaistr = "尝试突破";
-                        zhuangtaistr += $"(突破率{tupolv}%)";
-                    }
-                }
-                tShuXing.Find("ZhuangTai/Text").GetComponent<Text>().text = zhuangtaistr;
-
-
-                return false;
+                return placestr + actionstr;
             }
             [HarmonyPrefix]
             [HarmonyPatch(nameof(UINPCInfoPanel.SetFightInfo))]
@@ -780,28 +775,8 @@ namespace Ventulus
                 {
                     //偏好
                     tZhuangBeiGongFaPanel.Find("PianHao").gameObject.SetActive(true);
-                    List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
-                    List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
-                    List<int> listRingPianHao = npc.json["equipRingPianHao"].ToList();
-                    string strPianHao = "武器偏好：" + Environment.NewLine;
-                    foreach (int i in listWeaponPianHao)
-                    {
-                        strPianHao += i.ToString() + GetEquipHeChengStr(i);
-                        strPianHao += Environment.NewLine;
-                    }
-                    strPianHao += Environment.NewLine + "防具偏好：" + Environment.NewLine;
-                    foreach (int i in listClothingPianHao)
-                    {
-                        strPianHao += i.ToString() + GetEquipHeChengStr(i);
-                        strPianHao += Environment.NewLine;
-                    }
-                    strPianHao += Environment.NewLine + "饰品偏好：" + Environment.NewLine;
-                    foreach (int i in listRingPianHao)
-                    {
-                        strPianHao += i.ToString() + GetEquipHeChengStr(i);
-                        strPianHao += Environment.NewLine;
-                    }
-                    tZhuangBeiGongFaPanel.Find("PianHao").GetComponent<PointerItem>().Desc = strPianHao;
+
+                    tZhuangBeiGongFaPanel.Find("PianHao").GetComponent<PointerItem>().Desc = MakePianHaoStr(npc);
                 }
                 else
                 {
@@ -810,6 +785,46 @@ namespace Ventulus
                 }
 
             }
+        }
+
+        private static string MakePianHaoStr(UINPCData npc)
+        {
+            if (!npc.json.HasField("equipWeaponPianHao"))
+                return string.Empty;
+            List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
+            List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
+            List<int> listRingPianHao = npc.json["equipRingPianHao"].ToList();
+            string strPianHao = string.Empty;
+            if (listWeaponPianHao.Count > 0)
+            {
+                strPianHao += "武器偏好：" + Environment.NewLine;
+                foreach (int i in listWeaponPianHao)
+                {
+                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                    strPianHao += Environment.NewLine;
+                }
+            }
+            if (listClothingPianHao.Count > 0)
+            {
+                strPianHao += Environment.NewLine + "防具偏好：" + Environment.NewLine;
+                foreach (int i in listClothingPianHao)
+                {
+                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                    strPianHao += Environment.NewLine;
+                }
+            }
+            if (listRingPianHao.Count > 0)
+            {
+                strPianHao += Environment.NewLine + "饰品偏好：" + Environment.NewLine;
+                foreach (int i in listRingPianHao)
+                {
+                    strPianHao += i.ToString() + GetEquipHeChengStr(i);
+                    strPianHao += Environment.NewLine;
+                }
+            }
+
+            return strPianHao;
+
         }
         public static string GetEquipHeChengStr(int id, bool bShowInt = false)
         {
@@ -852,14 +867,18 @@ namespace Ventulus
                 WuDaoSVItem.LevelText.text = "悟道类型";
                 WuDaoSVItem.SkillText.text = "#s34#cb47a39" + strWuDaoLeiXing;
 
-                Transform tDao = UnityEngine.Object.Instantiate<GameObject>(WuDaoSVItem.LevelText.gameObject, tWuDaoLeiXing.Find("Title/Head")).transform;
-                tDao.name = "Dao";
-                tDao.localPosition = Vector3.zero;
-                Text Dao = tDao.GetComponent<Text>();
-                Dao.text = "道";
-                Dao.color = new Color(132f / 255f, 94f / 255f, 33f / 225f, 1f);
-                Dao.fontStyle = FontStyle.Bold;
+                GameObject goDao = UnityEngine.Object.Instantiate<GameObject>(WuDaoSVItem.LevelText.gameObject, tWuDaoLeiXing.Find("Title/Head"));
+                MakeDaoChar(goDao);
             }
+        }
+        private static void MakeDaoChar(GameObject goDao)
+        {
+            goDao.name = "Dao";
+            goDao.transform.localPosition = Vector3.zero;
+            Text Dao = goDao.GetComponent<Text>();
+            Dao.text = "道";
+            Dao.color = new Color(132f / 255f, 94f / 255f, 33f / 225f, 1f);
+            Dao.fontStyle = FontStyle.Bold;
         }
 
         [HarmonyPatch(typeof(UINPCWuDaoSVItem))]
@@ -886,8 +905,6 @@ namespace Ventulus
             {
                 //调整【重要事件面板】
                 //因为每次内容都会清空，只能即时增加一条对象。
-
-
 
                 //耐药性结果字符串字典
                 Dictionary<int, string> DanYaoSeidToNaiYaoStr = new Dictionary<int, string>();
