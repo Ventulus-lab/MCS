@@ -18,7 +18,6 @@ namespace Ventulus
     {
         void Start()
         {
-            //输出日志
             Logger.LogInfo("更多NPC信息加载成功！");
             var harmony = new Harmony("Ventulus.MCS.MoreNPCInfo");
             harmony.PatchAll();
