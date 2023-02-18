@@ -308,8 +308,8 @@ namespace Ventulus
             {105,"招待拜山"},
             {111,"为天机阁跑商"},
             {112,"为天机阁进货"},
-            {113,"受邀至洞府"},
-            {114,"道侣至洞府"},
+            {113,"受邀拜访洞府"},
+            {114,"道侣拜访洞府"},
             {115,"管理碎星商会事宜"},
             {116,"星宫宫主闭关"},
             {117,"飞升观礼"},
@@ -641,7 +641,21 @@ namespace Ventulus
                 //标签
                 tShuXing.Find("Tag/Text").GetComponent<Text>().text = (NPCTag.ContainsKey(npc.Tag) ? NPCTag[npc.Tag] : "未知") + (ShowStringInt.Value ? npc.Tag.ToString() : "");
 
-
+                //关系
+                string strGuanxi = "无";
+                if (npc.IsKnowPlayer || npc.IsGuDingNPC) strGuanxi = "普通";
+                if (PlayerEx.IsDaoLv(npc.ID))
+                    strGuanxi += "、道侣";
+                if (PlayerEx.IsTheather(npc.ID))
+                    strGuanxi += "、师父";
+                if (PlayerEx.IsTuDi(npc.ID))
+                    strGuanxi += "、徒弟";
+                if (PlayerEx.IsBrother(npc.ID))
+                    strGuanxi += "、结义";
+                if (PlayerEx.Player.menPai > 0 && npc.json.HasField("MenPai") && PlayerEx.Player.menPai == npc.json["MenPai"].I)
+                    strGuanxi += "、同门";
+                strGuanxi = strGuanxi.Replace("无、", string.Empty).Replace("普通、", string.Empty);
+                tShuXing.Find("GuanXi/Text").GetComponent<Text>().text = strGuanxi;
 
                 //修为
                 //"MaxExp":194400000最大值刚刚好用int装下，但要是*100就不够了
@@ -676,43 +690,7 @@ namespace Ventulus
                 return false;
             }
 
-            private static string MakeNPCAtionStr(UINPCData npc)
-            {
-                string actionstr = NPCAction.ContainsKey(npc.ActionID) ? NPCAction[npc.ActionID] : "未知";
-                string placestr = string.Empty;
-                foreach (var dian in from int dian in NpcJieSuanManager.inst.npcMap.bigMapNPCDictionary.Keys
-                                     where NpcJieSuanManager.inst.npcMap.bigMapNPCDictionary[dian].Contains(npc.ID)
-                                     select dian)
-                {
-                    placestr = "在大地图上";
-                    foreach (var ludian in from string ludian in jsonData.instance.AllMapLuDainType.keys
-                                           where ludian == dian.ToString()
-                                           select ludian)
-                    {
-                        placestr = "在" + jsonData.instance.AllMapLuDainType[ludian]["LuDianName"].str.ToCN();
-                        break;
-                    }
-                }
 
-                foreach (var scene in from string scene in NpcJieSuanManager.inst.npcMap.threeSenceNPCDictionary.Keys
-                                      where NpcJieSuanManager.inst.npcMap.threeSenceNPCDictionary[scene].Contains(npc.ID)
-                                      select scene)
-                {
-                    placestr = "在" + jsonData.instance.SceneNameJsonData[scene]["MapName"].str.ToCN();
-                    break;
-                }
-
-                foreach (var (fuben, pos) in from string fuben in NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary.Keys
-                                             let fubendict = NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary[fuben]
-                                             from int pos in fubendict.Keys
-                                             where fubendict[pos].Contains(npc.ID)
-                                             select (fuben, pos))
-                {
-                    placestr = "在" + jsonData.instance.SceneNameJsonData[fuben]["MapName"].str.ToCN() + "的第" + pos.ToString() + "位置";
-                    break;
-                }
-                return placestr + actionstr;
-            }
             [HarmonyPrefix]
             [HarmonyPatch(nameof(UINPCInfoPanel.SetFightInfo))]
             public static bool SetFightInfo_Prefix(UINPCInfoPanel __instance)
@@ -748,6 +726,54 @@ namespace Ventulus
                 return true;
             }
         }
+
+        private static string MakeNPCAtionStr(UINPCData npc)
+        {
+            string actionstr = NPCAction.ContainsKey(npc.ActionID) ? NPCAction[npc.ActionID] : "未知";
+            string placestr = string.Empty;
+
+            //地点在大地图
+            Dictionary<int, List<int>> bigDict = NpcJieSuanManager.inst.npcMap.bigMapNPCDictionary;
+            int dian = bigDict.Keys.FirstOrDefault(key => bigDict[key].Contains(npc.ID));
+            if (dian > 0)
+            {
+                placestr = "在大地图上";
+                var ludian = jsonData.instance.AllMapLuDainType.keys.FirstOrDefault(key => key == dian.ToString());
+                if (!string.IsNullOrWhiteSpace(ludian))
+                    placestr = "在" + jsonData.instance.AllMapLuDainType[ludian]["LuDianName"].str.ToCN();
+            }
+            //地点在三级场景
+            Dictionary<string, List<int>> threeDict = NpcJieSuanManager.inst.npcMap.threeSenceNPCDictionary;
+            string scene = threeDict.Keys.FirstOrDefault(key => threeDict[key].Contains(npc.ID));
+            if (!string.IsNullOrEmpty(scene))
+                placestr = "在" + jsonData.instance.SceneNameJsonData[scene]["MapName"].str.ToCN();
+
+
+            //地点在副本
+            //foreach (var (fuben, pos) in from string fuben in NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary.Keys
+            //                             let fubendict = NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary[fuben]
+            //                             from int pos in fubendict.Keys
+            //                             where fubendict[pos].Contains(npc.ID)
+            //                             select (fuben, pos))
+            //{
+            //    placestr = "在" + jsonData.instance.SceneNameJsonData[fuben]["MapName"].str.ToCN() + "的第" + pos.ToString() + "位置";
+            //    break;
+            //}
+
+
+            IEnumerable<(string fuben, int pos)> query = from string fuben in NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary.Keys
+                                                         let fubendict = NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary[fuben]
+                                                         from int pos in fubendict.Keys
+                                                         where fubendict[pos].Contains(npc.ID)
+                                                         select (fuben, pos);
+            if (query.Count() > 0)
+                foreach ((string fuben, int pos) in query)
+                {
+                    placestr = "在" + jsonData.instance.SceneNameJsonData[fuben]["MapName"].str.ToCN() + "的第" + pos.ToString() + "位置";
+                }
+            return placestr + actionstr;
+        }
+
         [HarmonyPatch(typeof(UINPCZhuangBeiGongFaPanel))]
         class UINPCZhuangBeiGongFaPanel_Patch
         {
