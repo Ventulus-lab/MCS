@@ -1,22 +1,31 @@
-﻿using BepInEx;
+﻿using Bag;
+using BepInEx;
+using BepInEx.Configuration;
+using GUIPackage;
 using HarmonyLib;
+using JSONClass;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyOpenInfoPanel", "传音符联系人按钮优化", "1.1")]
-    public class CyOpenInfoPanel : BaseUnityPlugin
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.0")]
+    public class CyContactOptimization : BaseUnityPlugin
     {
         void Start()
         {
-            Logger.LogInfo("传音符联系人按钮优化加载成功！");
-            var harmony = new Harmony("Ventulus.MCS.CyOpenInfoPanel");
+            Logger.LogInfo("传音符联系人优化加载成功！");
+            var harmony = new Harmony("Ventulus.MCS.CyContactOptimization");
             harmony.PatchAll();
 
         }
-        public static CyOpenInfoPanel Instance;
+        public static CyContactOptimization Instance;
         void Awake()
         {
             Instance = this;
@@ -37,6 +46,7 @@ namespace Ventulus
                 Transform tTagImage = __instance.transform.Find("TagImage");
                 Transform tBg = __instance.transform.Find("Bg");
                 Transform tName = tBg.Find("Name");
+                (tTagImage as RectTransform).anchoredPosition = new Vector2(-170f, 0f);
 
                 GameObject MakeNewBiaoQian(string name)
                 {
@@ -49,12 +59,12 @@ namespace Ventulus
                     RectBiaoQian.offsetMax = new Vector2(179f, 54.5f);
                     RectBiaoQian.offsetMin = new Vector2(-179f, -54.5f);
                     int newnum = __instance.transform.childCount - 2;
-                    RectBiaoQian.anchoredPosition = new Vector2(-55 - (50 * newnum), 0);
+                    RectBiaoQian.anchoredPosition = new Vector2(-47 - (47 * newnum), 0);
                     goBiaoQian.SetActive(false);
                     //增加标签上的字
                     GameObject goBiaoQianText = UnityEngine.Object.Instantiate<GameObject>(tName.gameObject, goBiaoQian.transform);
                     goBiaoQianText.name = name + "Text";
-                    (goBiaoQianText.transform as RectTransform).anchoredPosition = new Vector2(-82f, 12f);
+                    (goBiaoQianText.transform as RectTransform).anchoredPosition = new Vector2(-83f, 12f);
                     UnityEngine.UI.Text BiaoQianText = goBiaoQianText.GetComponent<UnityEngine.UI.Text>();
                     BiaoQianText.fontSize = 30;
                     BiaoQianText.text = $"{name[0]}{Environment.NewLine}{name[1]}";
@@ -72,13 +82,15 @@ namespace Ventulus
                 {
                     //增加查看标签
                     GameObject goChaKan = MakeNewBiaoQian("查看");
-                    goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShouQu(npcId); });
+                    goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
                 }
 
                 //收取
-                GameObject goShouQu = MakeNewBiaoQian("收取");
-                goShouQu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId); });
-
+                if (hasShouQuItem(npcId))
+                {
+                    GameObject goShouQu = MakeNewBiaoQian("收取");
+                    goShouQu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShouQu(npcId); goShouQu.SetActive(false); });
+                }
             }
             static UnityAction ClickChaKan(int npcId)
             {
@@ -118,10 +130,73 @@ namespace Ventulus
                 int id = NPCEx.NPCIDToNew(npcId);
                 Instance.Logger.LogInfo("收取按钮被点击了" + npcId + "皮套人" + id);
 
-                UINPCData npc = new UINPCData(id);
-                npc.RefreshData();
- 
+
+                Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
+                Dictionary<string, List<EmailData>> hasReadEmailDictionary = PlayerEx.Player.emailDateMag.hasReadEmailDictionary;
+
+                if (newEmailDictionary.Count > 0 && newEmailDictionary.ContainsKey(npcId.ToString()))
+                {
+                    List<EmailData> emails = newEmailDictionary[npcId.ToString()];
+                    foreach (EmailData emailData in emails)
+                    {
+                        //actionId=1是赠送给玩家，2是索取
+                        if (emailData.actionId == 1)
+                        {
+                            if (emailData.item[1] > 0)
+                            {
+                                Tools.instance.getPlayer().addItem(emailData.item[0], emailData.item[1], Tools.CreateItemSeid(emailData.item[0]), true);
+                                Instance.Logger.LogInfo($"收取了物品{emailData.item[0]}共{emailData.item[1]}个");
+                                emailData.item[1] = -1;
+                            }
+                        }
+                        else if (emailData.actionId == 2)
+                        {
+                        }
+                    }
+                }
+                if (hasReadEmailDictionary.Count > 0 && hasReadEmailDictionary.ContainsKey(npcId.ToString()))
+                {
+                    List<EmailData> emails = hasReadEmailDictionary[npcId.ToString()];
+                    foreach (EmailData emailData in emails)
+                    {
+                        //actionId=1是赠送给玩家，2是索取
+                        if (emailData.actionId == 1)
+                        {
+                            if (emailData.item[1] > 0)
+                            {
+                                Tools.instance.getPlayer().addItem(emailData.item[0], emailData.item[1], Tools.CreateItemSeid(emailData.item[0]), true);
+                                Instance.Logger.LogInfo($"收取了物品{emailData.item[0]}共{emailData.item[1]}个");
+                                emailData.item[1] = -1;
+                            }
+                        }
+                        else if (emailData.actionId == 2)
+                        {
+                        }
+                    }
+                }
+                CyUIMag.inst.cyEmail.cySendBtn.Hide();
+                CyUIMag.inst.cyEmail.Init(npcId);
                 return null;
+            }
+            static bool hasShouQuItem(int npcId)
+            {
+                bool has = false;
+                Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
+                Dictionary<string, List<EmailData>> hasReadEmailDictionary = PlayerEx.Player.emailDateMag.hasReadEmailDictionary;
+
+                if (newEmailDictionary.Count > 0 && newEmailDictionary.ContainsKey(npcId.ToString()))
+                {
+                    List<EmailData> emails = newEmailDictionary[npcId.ToString()];
+                    if (emails.FirstOrDefault(emailData => emailData.actionId == 1 && emailData.item[1] > 0) != null)
+                        has = true;
+                }
+                if (hasReadEmailDictionary.Count > 0 && hasReadEmailDictionary.ContainsKey(npcId.ToString()))
+                {
+                    List<EmailData> emails = hasReadEmailDictionary[npcId.ToString()];
+                    if (emails.FirstOrDefault(emailData => emailData.actionId == 1 && emailData.item[1] > 0) != null)
+                        has = true;
+                }
+                return has;
             }
 
             [HarmonyPostfix]
@@ -134,9 +209,9 @@ namespace Ventulus
                 Transform tShouQu = __instance.transform.Find("收取");
                 if (__instance.isSelect)
                 {
-                    if (tChaKan) tChaKan.gameObject.SetActive(true);
+                    if (tChaKan && NPCEx.NPCIDToNew(__instance.npcId) >= 20000) tChaKan.gameObject.SetActive(true);
                     if (tShanChu) tShanChu.gameObject.SetActive(true);
-                    if (tShouQu) tShouQu.gameObject.SetActive(true);
+                    if (tShouQu && hasShouQuItem(__instance.npcId)) tShouQu.gameObject.SetActive(true);
                 }
                 else
                 {
