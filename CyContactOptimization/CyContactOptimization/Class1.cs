@@ -4,10 +4,12 @@ using BepInEx.Configuration;
 using GUIPackage;
 using HarmonyLib;
 using JSONClass;
+using script.NpcAction;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -15,7 +17,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.0")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.2")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Start()
@@ -37,16 +39,10 @@ namespace Ventulus
             [HarmonyPatch(nameof(CyFriendCell.Init))]
             public static void Init_Postfix(CyFriendCell __instance, int npcId)
             {
-                //有标记的置顶
-                if (__instance.isTag)
-                {
-                    __instance.transform.SetAsFirstSibling();
-                }
-
                 Transform tTagImage = __instance.transform.Find("TagImage");
                 Transform tBg = __instance.transform.Find("Bg");
                 Transform tName = tBg.Find("Name");
-                (tTagImage as RectTransform).anchoredPosition = new Vector2(-170f, 0f);
+                tTagImage.localPosition = new Vector3(-170f, -54.5f, 0f);
 
                 GameObject MakeNewBiaoQian(string name)
                 {
@@ -64,7 +60,7 @@ namespace Ventulus
                     //增加标签上的字
                     GameObject goBiaoQianText = UnityEngine.Object.Instantiate<GameObject>(tName.gameObject, goBiaoQian.transform);
                     goBiaoQianText.name = name + "Text";
-                    (goBiaoQianText.transform as RectTransform).anchoredPosition = new Vector2(-83f, 12f);
+                    goBiaoQianText.transform.localPosition = new Vector3(-83f, 12f, 0);
                     UnityEngine.UI.Text BiaoQianText = goBiaoQianText.GetComponent<UnityEngine.UI.Text>();
                     BiaoQianText.fontSize = 30;
                     BiaoQianText.text = $"{name[0]}{Environment.NewLine}{name[1]}";
@@ -75,10 +71,10 @@ namespace Ventulus
 
                 //增加删除标签
                 GameObject goShanChu = MakeNewBiaoQian("删除");
-                goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId); });
+                goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId, tName.GetComponent<Text>().text); });
 
 
-                if (NPCEx.NPCIDToNew(npcId) >= 20000)
+                if ( !__instance.isDeath && !__instance.IsFly)
                 {
                     //增加查看标签
                     GameObject goChaKan = MakeNewBiaoQian("查看");
@@ -91,38 +87,52 @@ namespace Ventulus
                     GameObject goShouQu = MakeNewBiaoQian("收取");
                     goShouQu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShouQu(npcId); goShouQu.SetActive(false); });
                 }
+
+                //排序
+                //由于新邮件人是先初始化cell再放红点，所以这里不合适排序
+                //SortNpcCells(__instance.transform.parent);
             }
             static UnityAction ClickChaKan(int npcId)
             {
 
                 int id = NPCEx.NPCIDToNew(npcId);
                 Instance.Logger.LogInfo("查看按钮被点击了" + npcId + "皮套人" + id);
-                if (id < 20000) return null;
                 UINPCData npc = new UINPCData(id);
-                npc.RefreshData();
-
-                CyUIMag.inst.Close();
+                if (id < 20000)
+                {
+                    npc.RefreshOldNpcData();
+                    npc.IsFight= true;
+                    UINPCJiaoHu.Inst.NowJiaoHuEnemy = npc;
+                    UINPCJiaoHu.Inst.InfoPanel.TabGroup.HideTab();
+                }
+                else
+                {
+                    npc.RefreshData();
+                    UINPCJiaoHu.Inst.InfoPanel.TabGroup.UnHideTab();
+                }
                 UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
+
+                CyUIMag.inst.Close();  
                 UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
 
                 return null;
             }
 
-            static UnityAction ClickShanChu(int npcId)
+            static UnityAction ClickShanChu(int npcId, string name)
             {
 
                 int id = NPCEx.NPCIDToNew(npcId);
                 Instance.Logger.LogInfo("删除按钮被点击了" + npcId + "皮套人" + id);
+                //由于可能会是死人，在jsonData.instance.AvatarRandomJsonData里没有信息
 
-                UINPCData npc = new UINPCData(id);
-                npc.RefreshData();
-                USelectBox.Show($"确认要删除联系人{npc.Name}吗？ ", delegate
+                USelectBox.Show($"确认要删除联系人{name}吗？ ", delegate
                 {
                     CyUIMag.inst.npcList.friendList.Remove(npcId);
                     CyUIMag.inst.npcList.Init();
                 }, null);
                 return null;
             }
+
 
             static UnityAction ClickShouQu(int npcId)
             {
@@ -209,9 +219,17 @@ namespace Ventulus
                 Transform tShouQu = __instance.transform.Find("收取");
                 if (__instance.isSelect)
                 {
-                    if (tChaKan && NPCEx.NPCIDToNew(__instance.npcId) >= 20000) tChaKan.gameObject.SetActive(true);
-                    if (tShanChu) tShanChu.gameObject.SetActive(true);
-                    if (tShouQu && hasShouQuItem(__instance.npcId)) tShouQu.gameObject.SetActive(true);
+                    if (__instance.isDeath || __instance.IsFly)
+                    {
+                        (tShanChu.transform as RectTransform).anchoredPosition = new Vector2(-47f, 0f);
+                        if (tShanChu) tShanChu.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        if (tShanChu) tShanChu.gameObject.SetActive(true);
+                        if (tChaKan) tChaKan.gameObject.SetActive(true);
+                        if (tShouQu && hasShouQuItem(__instance.npcId)) tShouQu.gameObject.SetActive(true);
+                    }
                 }
                 else
                 {
@@ -229,7 +247,76 @@ namespace Ventulus
                 {
                     __instance.transform.SetAsFirstSibling();
                 }
+                else
+                {
+                    //排序
+                    SortNpcCells(__instance.transform.parent);
+                }
+            }
+
+
+        }
+        static void SortNpcCells(Transform tContent)
+        {
+            int count = tContent.childCount;
+            Instance.Logger.LogInfo("排序cell共" + count);
+            if (count == 0) return;
+            int index = 0;
+            for (int i = 0; i < count; i++)
+            {
+                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
+                if (cell.isTag && cell.redDian.activeSelf)
+                {
+                    cell.transform.SetAsLastSibling();
+                    index--;
+                }
+                index++;
+            }
+            index = 0;
+            for (int i = 0; i < count; i++)
+            {
+                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
+                if (cell.isTag && !cell.redDian.activeSelf)
+                {
+                    cell.transform.SetAsLastSibling();
+                    index--;
+                }
+                index++;
+            }
+            index = 0;
+            for (int i = 0; i < count; i++)
+            {
+                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
+                if (!cell.isTag && cell.redDian.activeSelf)
+                {
+                    cell.transform.SetAsLastSibling();
+                    index--;
+                }
+                index++;
+            }
+            index = 0;
+            for (int i = 0; i < count; i++)
+            {
+                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
+                if (!cell.isTag && !cell.redDian.activeSelf)
+                {
+                    cell.transform.SetAsLastSibling();
+                    index--;
+                }
+                index++;
             }
         }
+        [HarmonyPatch(typeof(CyNpcList))]
+        class CyNpcList_Patch
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(CyNpcList.Init))]
+            public static void Init_Postfix(CyNpcList __instance)
+            {
+                var t = __instance.transform.Find("List/Viewport/Content");
+                SortNpcCells(t);
+            }
+        }
+
     }
 }
