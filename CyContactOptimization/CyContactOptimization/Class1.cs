@@ -73,13 +73,13 @@ namespace Ventulus
                 GameObject goShanChu = MakeNewBiaoQian("删除");
                 goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId, tName.GetComponent<Text>().text); });
 
-
-                if ( !__instance.isDeath && !__instance.IsFly)
-                {
-                    //增加查看标签
-                    GameObject goChaKan = MakeNewBiaoQian("查看");
-                    goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
-                }
+                if (NPCEx.NPCIDToNew(npcId) >= 20000)
+                    if (!__instance.isDeath && !__instance.IsFly)
+                    {
+                        //增加查看标签
+                        GameObject goChaKan = MakeNewBiaoQian("查看");
+                        goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
+                    }
 
                 //收取
                 if (hasShouQuItem(npcId))
@@ -96,12 +96,12 @@ namespace Ventulus
             {
 
                 int id = NPCEx.NPCIDToNew(npcId);
-                Instance.Logger.LogInfo("查看按钮被点击了" + npcId + "皮套人" + id);
+                Instance.Logger.LogInfo("查看按钮被点击了" + (npcId < 20000 ? "原型" : "") + npcId + (id > npcId ? $"皮套人{id}" : ""));
                 UINPCData npc = new UINPCData(id);
                 if (id < 20000)
                 {
                     npc.RefreshOldNpcData();
-                    npc.IsFight= true;
+                    npc.IsFight = true;
                     UINPCJiaoHu.Inst.NowJiaoHuEnemy = npc;
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.HideTab();
                 }
@@ -113,6 +113,7 @@ namespace Ventulus
                 UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
 
                 CyUIMag.inst.Close();  
+                //PanelMamager.CanOpenOrClose=true;
                 UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
 
                 return null;
