@@ -687,24 +687,26 @@ namespace Ventulus
         }
         private static string MakeZhongZuSexStr(UINPCData npc)
         {
-            string ZhongZu = string.Empty;
             int AvatarType = npc.json.GetField("AvatarType").I;
             int SexType = npc.json.GetField("SexType").I;
-            if (AvatarType == 1)
-                ZhongZu = "人族";
-            else if (AvatarType == 2)
-                ZhongZu = "妖族";
-            else if (AvatarType == 3)
-                ZhongZu = "魔族";
-            else if (AvatarType == 4)
-                ZhongZu = "鬼族";
-            if (SexType == 1)
-                ZhongZu += "男";
-            else if (SexType == 2)
-                ZhongZu += "女";
-            else if (SexType == 3)
-                ZhongZu += "变态";
-            if (ZhongZu == string.Empty)
+            string ZhongZu;
+            if (AvatarType == 1 && SexType == 1)
+                ZhongZu = "男人";
+            else if (AvatarType == 1 && SexType == 2)
+                ZhongZu = "女人";
+            else if (AvatarType == 2 && SexType == 1)
+                ZhongZu = "公妖";
+            else if (AvatarType == 2 && SexType == 2)
+                ZhongZu = "母妖";
+            else if (AvatarType == 3 && SexType == 1)
+                ZhongZu = "牡魔";
+            else if (AvatarType == 3 && SexType == 2)
+                ZhongZu = "牝魔";
+            else if (AvatarType == 4 && SexType == 1)
+                ZhongZu = "雄鬼";
+            else if (AvatarType == 4 && SexType == 2)
+                ZhongZu = "雌鬼";
+            else
                 ZhongZu = "未知";
             return ZhongZu;
         }
@@ -856,7 +858,7 @@ namespace Ventulus
             return strPianHao;
 
         }
-        public static string GetEquipHeChengStr(int id, bool bShowInt = false)
+        public static string GetEquipHeChengStr(int id)
         {
             //根据装备属性ID生成中文词条
             JSONObject HeChengBiao = jsonData.instance.LianQiHeCheng;

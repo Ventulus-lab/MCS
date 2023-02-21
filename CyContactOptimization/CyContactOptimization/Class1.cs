@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Contexts;
+using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -17,7 +18,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.2")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.3")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Start()
@@ -73,7 +74,8 @@ namespace Ventulus
                 GameObject goShanChu = MakeNewBiaoQian("删除");
                 goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId, tName.GetComponent<Text>().text); });
 
-                if (NPCEx.NPCIDToNew(npcId) >= 20000)
+                //工具人是否能查看的开关
+                //if (NPCEx.NPCIDToNew(npcId) >= 20000)
                     if (!__instance.isDeath && !__instance.IsFly)
                     {
                         //增加查看标签
@@ -112,7 +114,7 @@ namespace Ventulus
                 }
                 UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
 
-                CyUIMag.inst.Close();  
+                CyUIMag.inst.Close();
                 //PanelMamager.CanOpenOrClose=true;
                 UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
 
@@ -244,15 +246,8 @@ namespace Ventulus
             public static void ClickTag_Postfix(CyFriendCell __instance)
             {
                 //有标记的置顶
-                if (__instance.isTag)
-                {
-                    __instance.transform.SetAsFirstSibling();
-                }
-                else
-                {
-                    //排序
-                    SortNpcCells(__instance.transform.parent);
-                }
+                SortNpcCells(__instance.transform.parent);
+
             }
 
 
@@ -277,7 +272,7 @@ namespace Ventulus
             for (int i = 0; i < count; i++)
             {
                 CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
-                if (cell.isTag && !cell.redDian.activeSelf)
+                if (!cell.isTag && cell.redDian.activeSelf)
                 {
                     cell.transform.SetAsLastSibling();
                     index--;
@@ -288,7 +283,7 @@ namespace Ventulus
             for (int i = 0; i < count; i++)
             {
                 CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
-                if (!cell.isTag && cell.redDian.activeSelf)
+                if (cell.isTag && !cell.redDian.activeSelf)
                 {
                     cell.transform.SetAsLastSibling();
                     index--;
@@ -316,6 +311,84 @@ namespace Ventulus
             {
                 var t = __instance.transform.Find("List/Viewport/Content");
                 SortNpcCells(t);
+            }
+
+            [HarmonyPrefix]
+            [HarmonyPatch("InitNpcList")]
+            public static void InitNpcList_Prefix(CyNpcList __instance)
+            {
+                __instance.friendList.Sort(new friendListComparer());
+            }
+        }
+        //联系人比较器，返回负数为较小在前，正数为较大在后
+        public class friendListComparer : Comparer<int>
+        {
+            public override int Compare(int x, int y)
+            {
+                
+
+                //红点优先
+                Dictionary<string, List<EmailData>> newEmailDict = Tools.instance.getPlayer().emailDateMag.newEmailDictionary;
+                List<int> TagNpcList = Tools.instance.getPlayer().emailDateMag.TagNpcList;
+                if (newEmailDict.ContainsKey(x.ToString()) && !newEmailDict.ContainsKey(x.ToString()))
+                {
+                    return -1;
+                }
+                else if (!newEmailDict.ContainsKey(x.ToString()) && newEmailDict.ContainsKey(x.ToString()))
+                {
+                    return 1;
+                }
+                //死亡和飞升的不管之前有没有标记，都先丢下去
+                if (NpcJieSuanManager.inst.IsDeath(x) && !NpcJieSuanManager.inst.IsDeath(y))
+                {
+                    return 1;
+                }
+                else if (!NpcJieSuanManager.inst.IsDeath(x) && NpcJieSuanManager.inst.IsDeath(y))
+                {
+                    return -1;
+                }
+
+                if (NpcJieSuanManager.inst.IsFly(x) && !NpcJieSuanManager.inst.IsFly(y))
+                {
+                    return 1;
+                }
+                else if (!NpcJieSuanManager.inst.IsFly(x) && NpcJieSuanManager.inst.IsFly(y))
+                {
+                    return -1;
+                }
+                //标记优先
+                if (TagNpcList.Contains(x) && !TagNpcList.Contains(y))
+                {
+                    return -1;
+                }
+                else if (!TagNpcList.Contains(x) && TagNpcList.Contains(y))
+                {
+                    return 1;
+                }
+
+                int newx = NPCEx.NPCIDToNew(x);
+                int newy = NPCEx.NPCIDToNew(y);
+                //实例npc比工具npc优先，哪怕好感为负数
+                if (newx < 20000 && newy >= 20000)
+                {
+                    return 1;
+                }
+                else if (newx >= 20000 && newy < 20000)
+                {
+                    return -1;
+                }
+                //实例npc好感高的优先
+                if (newx >= 20000 && newy >= 20000)
+                {
+                    UINPCData npcx = new UINPCData(x);
+                    UINPCData npcy = new UINPCData(y);
+                    npcx.RefreshData();
+                    npcy.RefreshData();
+                    return npcy.Favor - npcx.Favor;
+                }
+
+                return default;
+
             }
         }
 
