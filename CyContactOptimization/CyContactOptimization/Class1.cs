@@ -76,7 +76,7 @@ namespace Ventulus
 
                 //工具人是否能查看的开关
                 //if (NPCEx.NPCIDToNew(npcId) >= 20000)
-                    if (!__instance.isDeath && !__instance.IsFly)
+                if (!__instance.isDeath && !__instance.IsFly)
                     {
                         //增加查看标签
                         GameObject goChaKan = MakeNewBiaoQian("查看");
@@ -104,19 +104,31 @@ namespace Ventulus
                 {
                     npc.RefreshOldNpcData();
                     npc.IsFight = true;
+
+                    UINPCData npc609 = new UINPCData(609);
+                    npc609.RefreshData();
+                    UINPCJiaoHu.Inst.NowJiaoHuNPC = npc609;
+
                     UINPCJiaoHu.Inst.NowJiaoHuEnemy = npc;
+                    UINPCJiaoHu.Inst.InfoPanel.npc= npc;
+                    CyUIMag.inst.Close();
+                    UINPCJiaoHu.Inst.ShowNPCInfoPanel(UINPCJiaoHu.Inst.NowJiaoHuEnemy);
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.HideTab();
                 }
                 else
                 {
                     npc.RefreshData();
+                    npc.IsFight = false;
+                    UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
+                    CyUIMag.inst.Close();
+                    UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.UnHideTab();
                 }
-                UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
+                
 
-                CyUIMag.inst.Close();
+                
                 //PanelMamager.CanOpenOrClose=true;
-                UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
+                
 
                 return null;
             }

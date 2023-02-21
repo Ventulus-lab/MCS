@@ -190,7 +190,7 @@ namespace Ventulus
 
 
             //增加种族
-            Transform tZhongZu2 = MakeNewCiTiao("种族", tFightShuXing, 1);
+            Transform tZhongZu2 = MakeNewCiTiao("种类", tFightShuXing, 1);
             tZhongZu2.localPosition = new Vector3(30, 67.5f, 0);
 
             Transform tQiXue2 = tFightShuXing.Find("QiXue");
@@ -649,7 +649,7 @@ namespace Ventulus
 
 
                 //种族+性别
-                tFightShuXing.Find("种族/Text").GetComponent<Text>().text = MakeZhongZuSexStr(npc);
+                tFightShuXing.Find("种类/Text").GetComponent<Text>().text = MakeZhongZuSexStr(npc);
 
                 //灵根
                 tFightShuXing.Find("灵根/Text").GetComponent<Text>().text = MakeLingGenStr(npc);
@@ -790,8 +790,10 @@ namespace Ventulus
             {
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tZhuangBeiGongFaPanel = NPCInfoPanel.transform.Find("Panels/ZhuangBeiGongFaPanel");
-                UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
-                //Instance.Logger.LogInfo(npc.json.ToString().ToCN());
+                if (UINPCJiaoHu.Inst.InfoPanel.npc is null) return;
+                UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
+                if (npc == null) return;
+
                 if (npc.json.HasField("LiuPai"))
                 {
                     //流派
