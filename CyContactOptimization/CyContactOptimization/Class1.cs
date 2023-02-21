@@ -75,7 +75,7 @@ namespace Ventulus
                 goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId, tName.GetComponent<Text>().text); });
 
                 //工具人是否能查看的开关
-                //if (NPCEx.NPCIDToNew(npcId) >= 20000)
+                if (NPCEx.NPCIDToNew(npcId) >= 20000)
                 if (!__instance.isDeath && !__instance.IsFly)
                     {
                         //增加查看标签

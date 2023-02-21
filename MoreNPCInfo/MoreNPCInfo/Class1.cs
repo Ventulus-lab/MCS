@@ -1,11 +1,15 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using GUIPackage;
 using HarmonyLib;
 using JSONClass;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -28,6 +32,7 @@ namespace Ventulus
         public static MoreNPCInfo Instance;
         private static List<string> favorStrList = new List<string>();
         private static List<int> favorQuJianList = new List<int>();
+        private static List<int> SeaNPCIDList = new List<int>();
         public static ConfigEntry<bool> MaskByCondition;
         public static ConfigEntry<bool> ShowStringInt;
         private static Vector3 v3;
@@ -190,7 +195,7 @@ namespace Ventulus
 
 
             //增加种族
-            Transform tZhongZu2 = MakeNewCiTiao("种类", tFightShuXing, 1);
+            Transform tZhongZu2 = MakeNewCiTiao("种族", tFightShuXing, 1);
             tZhongZu2.localPosition = new Vector3(30, 67.5f, 0);
 
             Transform tQiXue2 = tFightShuXing.Find("QiXue");
@@ -553,13 +558,21 @@ namespace Ventulus
                 Instance.Logger.LogInfo("SetNPCInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 UINPCData npc = __instance.npc;
-
+                if (NPCEx.NPCIDToNew(npc.ID) >= 20000)
+                {
+                    //npc.RefreshData();
+                }
+                else
+                {
+                    Instance.Logger.LogWarning("出现原型NPC要设置完整信息！已拦截！");
+                    return false;
+                }
+                Instance.Logger.LogInfo(npc.json.ToString().ToCN());
                 //手动激活普通的查看属性
                 NPCInfoPanel.ShuXing.SetActive(true);
                 NPCInfoPanel.FightShuXing.SetActive(false);
 
                 Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
-                //Instance.Logger.LogInfo(npc.json.ToString().ToCN());
                 Transform tNPCShow = NPCInfoPanel.transform.Find("NPCShow");
 
                 //称号
@@ -640,6 +653,10 @@ namespace Ventulus
                 UINPCData npc = __instance.npc;
                 Instance.Logger.LogInfo(npc.json.ToString().ToCN());
                 Transform tNPCShow = NPCInfoPanel.transform.Find("NPCShow");
+                if (NPCEx.NPCIDToNew(npc.ID) >= 20000)
+                    npc.RefreshData();
+                else
+                    npc.RefreshOldNpcData();
 
                 //称号
                 tNPCShow.Find("ChengHao/Text").GetComponent<Text>().text = npc.Title;
@@ -649,7 +666,7 @@ namespace Ventulus
 
 
                 //种族+性别
-                tFightShuXing.Find("种类/Text").GetComponent<Text>().text = MakeZhongZuSexStr(npc);
+                tFightShuXing.Find("种族/Text").GetComponent<Text>().text = MakeZhongZuSexStr(npc);
 
                 //灵根
                 tFightShuXing.Find("灵根/Text").GetComponent<Text>().text = MakeLingGenStr(npc);
@@ -743,8 +760,15 @@ namespace Ventulus
         }
         private static string MakeNPCAtionStr(UINPCData npc)
         {
-            string actionstr = NPCAction.ContainsKey(npc.ActionID) ? NPCAction[npc.ActionID] : "未知";
+
             string placestr = string.Empty;
+            //SeaEx.Init();
+
+            //地点在副本
+            Dictionary<string, Dictionary<int, List<int>>> fuBenDict = NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary;
+            IEnumerable<(string fuben, int pos)> query = fuBenDict.Keys.SelectMany(fuben => fuBenDict[fuben].Where(fubendict => fubendict.Value.Contains(npc.ID)).Select(fubendict => (fuben, fubendict.Key)));
+            if (query.Count() > 0)
+                placestr = $"在{jsonData.instance.SceneNameJsonData[query.First().fuben]["MapName"].str.ToCN()}的第{query.First().pos}位置";
 
             //地点在大地图
             Dictionary<int, List<int>> bigDict = NpcJieSuanManager.inst.npcMap.bigMapNPCDictionary;
@@ -752,32 +776,38 @@ namespace Ventulus
             if (dian > 0)
             {
                 placestr = "在大地图上";
-                var ludian = jsonData.instance.AllMapLuDainType.keys.FirstOrDefault(key => key == dian.ToString());
+                string ludian = jsonData.instance.AllMapLuDainType.keys.FirstOrDefault(key => key == dian.ToString());
                 if (!string.IsNullOrWhiteSpace(ludian))
                     placestr = "在" + jsonData.instance.AllMapLuDainType[ludian]["LuDianName"].str.ToCN();
             }
+
             //地点在三级场景
             Dictionary<string, List<int>> threeDict = NpcJieSuanManager.inst.npcMap.threeSenceNPCDictionary;
             string scene = threeDict.Keys.FirstOrDefault(key => threeDict[key].Contains(npc.ID));
             if (!string.IsNullOrEmpty(scene))
                 placestr = "在" + jsonData.instance.SceneNameJsonData[scene]["MapName"].str.ToCN();
 
-            //地点在副本
-            //foreach (var (fuben, pos) in from string fuben in NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary.Keys
-            //                             let fubendict = NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary[fuben]
-            //                             from int pos in fubendict.Keys
-            //                             where fubendict[pos].Contains(npc.ID)
-            //                             select (fuben, pos))
-            //{
-            //    placestr = "在" + jsonData.instance.SceneNameJsonData[fuben]["MapName"].str.ToCN() + "的第" + pos.ToString() + "位置";
-            //    break;
-            //}
-            Dictionary<string, Dictionary<int, List<int>>> fuBenDict = NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary;
-            IEnumerable<(string fuben, int pos)> query = fuBenDict.Keys.SelectMany(fuben => fuBenDict[fuben].Where(fubendict => fubendict.Value.Contains(npc.ID)).Select(fubendict => (fuben, fubendict.Key)));
+            //地点在无尽之海，无尽之海上的船是随机抓人过来，交谈后强制改变行为id，在交谈之前仍然是正常行为id但会出现两处地点没清除之前地点，因此显示的地点要和行为配合不然就乱了。。
+            //其实宁州陆地上一些剧情也会强制抓人，但行为id和地点信息没改和当前情况不匹配
+            if (EndlessSeaMag.Inst != null && npc.IsSeaNPC && (npc.ActionID == 41 || npc.ActionID == 42))
+                foreach (SeaAvatarObjBase monstar in EndlessSeaMag.Inst.MonstarList)
+                {
+                    int staticId = (int)jsonData.instance.EndlessSeaNPCData[monstar._EventId.ToString()]["stvalue"][0];
+                    if (staticId > 2000) continue;
+                    int seaNPCID = NPCEx.GetSeaNPCID(staticId);
+                    if (npc.ID == seaNPCID)
+                    {
+                        Instance.Logger.LogInfo($"发现无尽之海灵舟上的NPC eventid{monstar._EventId}staticId{staticId}seaNPCID{seaNPCID}SeaId{monstar.SeaId}");
 
-            if (query.Count() > 0)
-                placestr = $"在{jsonData.instance.SceneNameJsonData[query.First().fuben]["MapName"].str.ToCN()}的第{query.First().pos}位置";
+                        //int BigSeaID = SeaEx.BigSeaHasSmallSeaIDDict.Keys.FirstOrDefault(key => SeaEx.BigSeaHasSmallSeaIDDict[key].Contains(monstar.SeaId));
+                        int BigSeaID = Tools.instance.getPlayer().GetDaHaiIDBySeaID(monstar.SeaId);
+                        if (BigSeaID > 0)
+                            placestr = $"在{jsonData.instance.SceneNameJsonData["Sea" + BigSeaID]["MapName"].str.ToCN()}的第{monstar.NowMapIndex}位置";
+                        break;
+                    }
+                }
 
+            string actionstr = NPCAction.ContainsKey(npc.ActionID) ? NPCAction[npc.ActionID] : "未知";
             return placestr + actionstr;
         }
 
