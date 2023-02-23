@@ -632,7 +632,7 @@ namespace Ventulus
                 tShuXing.Find("修为/Text").GetComponent<Text>().text = $"{npc.LevelStr}({percent}%)";
 
                 //状态
-                tShuXing.Find("状态/Text").GetComponent<Text>().text = MakeNPCZhuangTaiStr(npc);
+                tShuXing.Find("状态/Text").GetComponent<Text>().text = MakeNPCZhuangTaiStr(npc) + (ShowStringInt.Value ? npc.ZhuangTai.ToString() : ""); ;
 
 
                 return false;
@@ -734,8 +734,24 @@ namespace Ventulus
             if (npc.json.HasField("Status"))
                 time = npc.json["Status"]["StatusTime"].I;
             if (time <= 1200 && time > 0)
-                zhuangtaistr += "(" + time + "个月)";
-            if (npc.ZhuangTai == 2)
+                zhuangtaistr += $"({time}个月)";
+            if (npc.BigLevel == 5 && npc.json.HasField("FlyTime"))
+            {
+                DateTime tianjie = DateTime.Parse(npc.json["FlyTime"].Str);
+                DateTime nowTime = PlayerEx.Player.worldTimeMag.getNowTime();
+                string shengyu;
+                if (tianjie.Year - nowTime.Year > 0)
+                    shengyu = $"天劫剩余{tianjie.Year - nowTime.Year}年";
+                else if (tianjie.Month - nowTime.Month > 0)
+                    shengyu = $"天劫剩余{tianjie.Month - nowTime.Month}月";
+                else if (tianjie.Day - nowTime.Day > 0)
+                    shengyu = $"天劫剩余{tianjie.Day - nowTime.Day}天";
+                else
+                    shengyu = "准备渡劫";
+                int tupolv = NpcJieSuanManager.inst.npcTuPo.GetNpcBigTuPoLv(npc.ID);
+                zhuangtaistr += $"({shengyu}成功率{tupolv}%)";
+            }
+            else if (npc.ZhuangTai == 2)
             {
                 if (NpcJieSuanManager.inst.npcTuPo.IsCanSmallTuPo(npc.ID))
                     zhuangtaistr += "(小境界突破)";
@@ -747,6 +763,7 @@ namespace Ventulus
                     zhuangtaistr += $"(突破率{tupolv}%)";
                 }
             }
+            
             return zhuangtaistr;
         }
         private static string MakeNPCIDStr(int id)
@@ -788,8 +805,8 @@ namespace Ventulus
                 placestr = "在" + jsonData.instance.SceneNameJsonData[scene]["MapName"].str.ToCN();
 
             //地点在无尽之海，无尽之海上的船是随机抓人过来，交谈后强制改变行为id，在交谈之前仍然是正常行为id但会出现两处地点没清除之前地点，因此显示的地点要和行为配合不然就乱了。。
-            //其实宁州陆地上一些剧情也会强制抓人，但行为id和地点信息没改和当前情况不匹配
-            if (EndlessSeaMag.Inst != null && npc.IsSeaNPC && (npc.ActionID == 41 || npc.ActionID == 42))
+            //其实宁州陆地上一些剧情也会强制抓人，但行为id和地点信息没改和当前情况不匹配。说到底还是官方偷懒，剧情抓人应该立刻强制分配某些适合的行为id
+            if (EndlessSeaMag.Inst != null && EndlessSeaMag.Inst.MonstarList.Count > 0 && (npc.ActionID == 41 || npc.ActionID == 42))
                 foreach (SeaAvatarObjBase monstar in EndlessSeaMag.Inst.MonstarList)
                 {
                     int staticId = (int)jsonData.instance.EndlessSeaNPCData[monstar._EventId.ToString()]["stvalue"][0];
@@ -853,7 +870,7 @@ namespace Ventulus
 
         private static string MakePianHaoStr(UINPCData npc)
         {
-            if (!npc.json.HasField("equipWeaponPianHao"))
+            if (!npc.json.HasField("equipWeaponPianHao") || npc.json["equipWeaponPianHao"].IsNull)
                 return string.Empty;
             List<int> listWeaponPianHao = npc.json["equipWeaponPianHao"].ToList();
             List<int> listClothingPianHao = npc.json["equipClothingPianHao"].ToList();
@@ -913,6 +930,9 @@ namespace Ventulus
             [HarmonyPatch(nameof(UINPCWuDaoPanel.OnPanelShow))]
             public static void OnPanelShow_Postfix(UINPCWuDaoPanel __instance)
             {
+                //UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
+                UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
+                if (npc == null) return;
                 //调整【悟道面板】
                 //因为每次内容都会清空，只能即时增加一条对象。改名悟道类型
                 Transform tWuDaoLeiXing = UnityEngine.Object.Instantiate<GameObject>(__instance.SVItemPrefab, __instance.ContentRT).transform;
@@ -923,7 +943,7 @@ namespace Ventulus
                 //Instance.Logger.LogInfo(WuDaoSVItem.WuDaoTypeSprites.Count);
                 WuDaoSVItem.TypeImage.gameObject.SetActive(false);
                 //tWuDaoLeiXing.Find("Head").gameObject.SetActive(false);
-                UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
+
                 int wudao = 0;
                 if (npc.json.HasField("wudaoType"))
                     wudao = npc.json.GetField("wudaoType").I;
@@ -972,8 +992,8 @@ namespace Ventulus
 
                 //耐药性结果字符串字典
                 Dictionary<int, string> DanYaoSeidToNaiYaoStr = new Dictionary<int, string>();
-
-                UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
+                UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
+                if (npc == null) return;
 
                 if (npc.json.HasField("useItem") && !npc.json["useItem"].IsNull)
                 {
