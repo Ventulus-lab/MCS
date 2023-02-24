@@ -18,7 +18,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.3")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.4")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Start()
@@ -43,6 +43,7 @@ namespace Ventulus
                 Transform tTagImage = __instance.transform.Find("TagImage");
                 Transform tBg = __instance.transform.Find("Bg");
                 Transform tName = tBg.Find("Name");
+                //调整官方标记的位置
                 tTagImage.localPosition = new Vector3(-170f, -54.5f, 0f);
 
                 GameObject MakeNewBiaoQian(string name)
@@ -55,8 +56,9 @@ namespace Ventulus
                     RectTransform RectBiaoQian = goBiaoQian.transform as RectTransform;
                     RectBiaoQian.offsetMax = new Vector2(179f, 54.5f);
                     RectBiaoQian.offsetMin = new Vector2(-179f, -54.5f);
-                    int newnum = __instance.transform.childCount - 2;
-                    RectBiaoQian.anchoredPosition = new Vector2(-47 - (47 * newnum), 0);
+                    //int newnum = __instance.transform.childCount - 2;
+                    RectBiaoQian.anchoredPosition = new Vector2(-47, 0);
+                    //默认都不显示
                     goBiaoQian.SetActive(false);
                     //增加标签上的字
                     GameObject goBiaoQianText = UnityEngine.Object.Instantiate<GameObject>(tName.gameObject, goBiaoQian.transform);
@@ -67,6 +69,7 @@ namespace Ventulus
                     BiaoQianText.text = $"{name[0]}{Environment.NewLine}{name[1]}";
                     BiaoQianText.alignment = TextAnchor.UpperLeft;
                     BiaoQianText.verticalOverflow = VerticalWrapMode.Overflow;
+
                     return goBiaoQian;
                 }
 
@@ -74,25 +77,45 @@ namespace Ventulus
                 GameObject goShanChu = MakeNewBiaoQian("删除");
                 goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId, tName.GetComponent<Text>().text); });
 
+
+                //增加查看标签
+                GameObject goChaKan = MakeNewBiaoQian("查看");
+                goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
                 //工具人是否能查看的开关
-                if (NPCEx.NPCIDToNew(npcId) >= 20000)
+                //if (NPCEx.NPCIDToNew(npcId) >= 20000) goChaKan.SetActive(false);
                 if (!__instance.isDeath && !__instance.IsFly)
-                    {
-                        //增加查看标签
-                        GameObject goChaKan = MakeNewBiaoQian("查看");
-                        goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
-                    }
+                    goChaKan.SetActive(false);
+
+
 
                 //收取
-                if (hasShouQuItem(npcId))
-                {
-                    GameObject goShouQu = MakeNewBiaoQian("收取");
-                    goShouQu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShouQu(npcId); goShouQu.SetActive(false); });
-                }
+                GameObject goShouQu = MakeNewBiaoQian("收取");
+                goShouQu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShouQu(npcId); goShouQu.SetActive(false); ArrangeLabelPositions(__instance.transform); });
+                //不选中也显示收取按钮
+                //goShouQu.SetActive(hasShouQuItem(npcId));
+
 
                 //排序
                 //由于新邮件人是先初始化cell再放红点，所以这里不合适排序
                 //SortNpcCells(__instance.transform.parent);
+                //标签排位置
+                ArrangeLabelPositions(__instance.transform);
+            }
+            static void ArrangeLabelPositions(Transform parent)
+            {
+                if (parent.childCount <= 2) return;
+                //后加的标签序号小且在下面
+                for (int i = parent.childCount - 3; i >= 0; i--)
+                {
+                    Transform tLable = parent.GetChild(i);
+                    int activenum = 0;
+                    for (int j = parent.childCount - 2; j >= i; j--)
+                    {
+                        if (parent.GetChild(j).gameObject.activeSelf)
+                            activenum++;
+                    }
+                    tLable.localPosition = new Vector3(-47f * activenum, -54.5f, 0);
+                }
             }
             static UnityAction ClickChaKan(int npcId)
             {
@@ -110,7 +133,7 @@ namespace Ventulus
                     UINPCJiaoHu.Inst.NowJiaoHuNPC = npc609;
 
                     UINPCJiaoHu.Inst.NowJiaoHuEnemy = npc;
-                    UINPCJiaoHu.Inst.InfoPanel.npc= npc;
+                    UINPCJiaoHu.Inst.InfoPanel.npc = npc;
                     CyUIMag.inst.Close();
                     UINPCJiaoHu.Inst.ShowNPCInfoPanel(UINPCJiaoHu.Inst.NowJiaoHuEnemy);
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.HideTab();
@@ -124,11 +147,11 @@ namespace Ventulus
                     UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.UnHideTab();
                 }
-                
 
-                
+
+
                 //PanelMamager.CanOpenOrClose=true;
-                
+
 
                 return null;
             }
@@ -232,26 +255,11 @@ namespace Ventulus
                 Transform tChaKan = __instance.transform.Find("查看");
                 Transform tShanChu = __instance.transform.Find("删除");
                 Transform tShouQu = __instance.transform.Find("收取");
-                if (__instance.isSelect)
-                {
-                    if (__instance.isDeath || __instance.IsFly)
-                    {
-                        (tShanChu.transform as RectTransform).anchoredPosition = new Vector2(-47f, 0f);
-                        if (tShanChu) tShanChu.gameObject.SetActive(true);
-                    }
-                    else
-                    {
-                        if (tShanChu) tShanChu.gameObject.SetActive(true);
-                        if (tChaKan) tChaKan.gameObject.SetActive(true);
-                        if (tShouQu && hasShouQuItem(__instance.npcId)) tShouQu.gameObject.SetActive(true);
-                    }
-                }
-                else
-                {
-                    if (tChaKan) tChaKan.gameObject.SetActive(false);
-                    if (tShanChu) tShanChu.gameObject.SetActive(false);
-                    if (tShouQu) tShouQu.gameObject.SetActive(false);
-                }
+                if (tShanChu) tShanChu.gameObject.SetActive(__instance.isSelect);
+                if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly);
+                if (tShouQu) tShouQu.gameObject.SetActive(__instance.isSelect && hasShouQuItem(__instance.npcId));
+
+                ArrangeLabelPositions(__instance.transform);
             }
             [HarmonyPostfix]
             [HarmonyPatch(nameof(CyFriendCell.ClickTag))]
@@ -261,7 +269,6 @@ namespace Ventulus
                 SortNpcCells(__instance.transform.parent);
 
             }
-
 
         }
         static void SortNpcCells(Transform tContent)
@@ -337,7 +344,7 @@ namespace Ventulus
         {
             public override int Compare(int x, int y)
             {
-                
+
 
                 //红点优先
                 Dictionary<string, List<EmailData>> newEmailDict = Tools.instance.getPlayer().emailDateMag.newEmailDictionary;
@@ -377,27 +384,27 @@ namespace Ventulus
                 {
                     return 1;
                 }
-
-                int newx = NPCEx.NPCIDToNew(x);
-                int newy = NPCEx.NPCIDToNew(y);
-                //实例npc比工具npc优先，哪怕好感为负数
-                if (newx < 20000 && newy >= 20000)
+                //好感高的优先
+                UINPCData npcx = new UINPCData(x);
+                if (NPCEx.NPCIDToNew(x) >= 20000)
                 {
-                    return 1;
-                }
-                else if (newx >= 20000 && newy < 20000)
-                {
-                    return -1;
-                }
-                //实例npc好感高的优先
-                if (newx >= 20000 && newy >= 20000)
-                {
-                    UINPCData npcx = new UINPCData(x);
-                    UINPCData npcy = new UINPCData(y);
                     npcx.RefreshData();
-                    npcy.RefreshData();
-                    return npcy.Favor - npcx.Favor;
                 }
+                else
+                {
+                    npcx.RefreshOldNpcData();
+                }
+                UINPCData npcy = new UINPCData(y);
+                if (NPCEx.NPCIDToNew(y) >= 20000)
+                {
+                    npcy.RefreshData();
+                }
+                else
+                {
+                    npcy.RefreshOldNpcData();
+                }
+                return npcy.Favor - npcx.Favor;
+
 
                 return default;
 
