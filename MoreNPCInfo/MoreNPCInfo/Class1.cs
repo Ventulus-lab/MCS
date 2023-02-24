@@ -943,16 +943,26 @@ namespace Ventulus
                 //Instance.Logger.LogInfo(WuDaoSVItem.WuDaoTypeSprites.Count);
                 WuDaoSVItem.TypeImage.gameObject.SetActive(false);
                 //tWuDaoLeiXing.Find("Head").gameObject.SetActive(false);
+                GameObject goDao = UnityEngine.Object.Instantiate<GameObject>(WuDaoSVItem.LevelText.gameObject, tWuDaoLeiXing.Find("Title/Head"));
+                MakeDaoChar(goDao);
 
                 int wudao = 0;
                 if (npc.json.HasField("wudaoType"))
                     wudao = npc.json.GetField("wudaoType").I;
                 string strWuDaoLeiXing = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + (ShowStringInt.Value ? wudao.ToString() : "");
                 WuDaoSVItem.LevelText.text = "悟道类型";
-                WuDaoSVItem.SkillText.text = "#s34#cb47a39" + strWuDaoLeiXing;
+                WuDaoSVItem.SkillText.text = "#s34#cb47a39" + strWuDaoLeiXing + Environment.NewLine;
 
-                GameObject goDao = UnityEngine.Object.Instantiate<GameObject>(WuDaoSVItem.LevelText.gameObject, tWuDaoLeiXing.Find("Title/Head"));
-                MakeDaoChar(goDao);
+                //增加npc悟道点悟道值相关
+                int WuDaoDian = npc.json["EWWuDaoDian"].I;
+                WuDaoSVItem.SkillText.text += "#s34#cb47a39悟道点 #n" + WuDaoDian.ToString() + Environment.NewLine;
+
+                int WuDaoZhi = npc.json["WuDaoValue"].I;
+                int WuDaoZhiLevel = npc.json["WuDaoValueLevel"].I;
+                int LevelUpExp = jsonData.instance.WuDaoZhiData[WuDaoZhiLevel.ToString()]["LevelUpExp"].I;
+                string WuDaoZhiStr = $"#s34#cb47a39悟道值 #n{WuDaoZhi}/{LevelUpExp}({WuDaoZhiLevel})";
+                WuDaoSVItem.SkillText.text += WuDaoZhiStr + Environment.NewLine;
+                
             }
         }
         private static void MakeDaoChar(GameObject goDao)
