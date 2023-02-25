@@ -81,12 +81,7 @@ namespace Ventulus
                 //增加查看标签
                 GameObject goChaKan = MakeNewBiaoQian("查看");
                 goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
-                //工具人是否能查看的开关
-                //if (NPCEx.NPCIDToNew(npcId) >= 20000) goChaKan.SetActive(false);
-                if (!__instance.isDeath && !__instance.IsFly)
-                    goChaKan.SetActive(false);
-
-
+                
 
                 //收取
                 GameObject goShouQu = MakeNewBiaoQian("收取");
@@ -119,9 +114,11 @@ namespace Ventulus
             }
             static UnityAction ClickChaKan(int npcId)
             {
+                if (NpcJieSuanManager.inst.IsDeath(npcId) || NpcJieSuanManager.inst.IsFly(npcId))
+                    return null;
 
                 int id = NPCEx.NPCIDToNew(npcId);
-                Instance.Logger.LogInfo("查看按钮被点击了" + (npcId < 20000 ? "原型" : "") + npcId + (id > npcId ? $"皮套人{id}" : ""));
+                Instance.Logger.LogInfo("查看按钮被点击了" + MakeNPCIDStr(npcId));
                 UINPCData npc = new UINPCData(id);
                 if (id < 20000)
                 {
@@ -158,10 +155,8 @@ namespace Ventulus
 
             static UnityAction ClickShanChu(int npcId, string name)
             {
-
-                int id = NPCEx.NPCIDToNew(npcId);
-                Instance.Logger.LogInfo("删除按钮被点击了" + npcId + "皮套人" + id);
-                //由于可能会是死人，在jsonData.instance.AvatarRandomJsonData里没有信息
+                Instance.Logger.LogInfo("删除按钮被点击了" + MakeNPCIDStr(npcId));
+                //由于可能会是死人，在jsonData.instance.AvatarRandomJsonData里没有信息，所以得把name传进来
 
                 USelectBox.Show($"确认要删除联系人{name}吗？ ", delegate
                 {
@@ -174,10 +169,7 @@ namespace Ventulus
 
             static UnityAction ClickShouQu(int npcId)
             {
-
-                int id = NPCEx.NPCIDToNew(npcId);
-                Instance.Logger.LogInfo("收取按钮被点击了" + npcId + "皮套人" + id);
-
+                Instance.Logger.LogInfo("收取按钮被点击了" + MakeNPCIDStr(npcId));
 
                 Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
                 Dictionary<string, List<EmailData>> hasReadEmailDictionary = PlayerEx.Player.emailDateMag.hasReadEmailDictionary;
@@ -246,6 +238,15 @@ namespace Ventulus
                 }
                 return has;
             }
+            private static string MakeNPCIDStr(int id)
+            {
+                id = NPCEx.NPCIDToNew(id);
+                int npcId = NPCEx.NPCIDToOld(id);
+                string str = id >= 20000 ? id.ToString() : string.Empty;
+                if (npcId < 20000)
+                    str += $"({npcId})";
+                return str;
+            }
 
             [HarmonyPostfix]
             [HarmonyPatch(nameof(CyFriendCell.updateState))]
@@ -258,6 +259,9 @@ namespace Ventulus
                 if (tShanChu) tShanChu.gameObject.SetActive(__instance.isSelect);
                 if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly);
                 if (tShouQu) tShouQu.gameObject.SetActive(__instance.isSelect && hasShouQuItem(__instance.npcId));
+                //工具人是否能查看的开关
+                //if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly && NPCEx.NPCIDToNew(__instance.npcId) >= 20000);
+ 
 
                 ArrangeLabelPositions(__instance.transform);
             }
@@ -384,29 +388,31 @@ namespace Ventulus
                 {
                     return 1;
                 }
-                //好感高的优先
-                UINPCData npcx = new UINPCData(x);
-                if (NPCEx.NPCIDToNew(x) >= 20000)
-                {
-                    npcx.RefreshData();
-                }
+                //好感高的优先，死亡飞升的得排除
+                if (NpcJieSuanManager.inst.IsDeath(x) || NpcJieSuanManager.inst.IsFly(x) || NpcJieSuanManager.inst.IsDeath(y) || NpcJieSuanManager.inst.IsFly(y))
+                    return 0;
                 else
                 {
-                    npcx.RefreshOldNpcData();
+                    UINPCData npcx = new UINPCData(x);
+                    if (NPCEx.NPCIDToNew(x) >= 20000)
+                    {
+                        npcx.RefreshData();
+                    }
+                    else
+                    {
+                        npcx.RefreshOldNpcData();
+                    }
+                    UINPCData npcy = new UINPCData(y);
+                    if (NPCEx.NPCIDToNew(y) >= 20000)
+                    {
+                        npcy.RefreshData();
+                    }
+                    else
+                    {
+                        npcy.RefreshOldNpcData();
+                    }
+                    return npcy.Favor - npcx.Favor;
                 }
-                UINPCData npcy = new UINPCData(y);
-                if (NPCEx.NPCIDToNew(y) >= 20000)
-                {
-                    npcy.RefreshData();
-                }
-                else
-                {
-                    npcy.RefreshOldNpcData();
-                }
-                return npcy.Favor - npcx.Favor;
-
-
-                return default;
 
             }
         }

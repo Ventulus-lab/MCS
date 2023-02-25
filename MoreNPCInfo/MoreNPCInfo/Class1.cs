@@ -17,7 +17,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.6")]
+    [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.7")]
     public class MoreNPCInfo : BaseUnityPlugin
     {
         void Start()
@@ -33,8 +33,11 @@ namespace Ventulus
         private static List<string> favorStrList = new List<string>();
         private static List<int> favorQuJianList = new List<int>();
         private static List<int> SeaNPCIDList = new List<int>();
-        public static ConfigEntry<bool> MaskByCondition;
-        public static ConfigEntry<bool> ShowStringInt;
+        //public static ConfigEntry<bool> MaskByCondition;
+        public static ConfigEntry<bool> ShowStringNum;
+        public static ConfigEntry<bool> ShowPianHaoInfo;
+        public static ConfigEntry<bool> ShowWuDaoInfo;
+        public static ConfigEntry<bool> ShowNaiYaoInfo;
         private static Vector3 v3;
         void Awake()
         {
@@ -44,7 +47,11 @@ namespace Ventulus
         void Init(MessageData data = null)
         {
             //MaskByCondition = Config.Bind<bool>("config", "MaskByCondition", true, "按条件遮挡部分信息，默认开启");
-            ShowStringInt = Config.Bind<bool>("config", "ShowStringInt", false, "显示代表字符串的数值，默认关闭");
+            ShowStringNum = Config.Bind<bool>("config", "显示代表信息的数值", false, "显示代表信息的数值，默认关闭");
+            ShowPianHaoInfo = Config.Bind<bool>("config", "显示偏好信息", true, "显示偏好信息，默认开启");
+            ShowWuDaoInfo = Config.Bind<bool>("config", "显示更多悟道信息", true, "显示更多悟道信息，默认开启");
+            ShowNaiYaoInfo = Config.Bind<bool>("config", "显示耐药信息", true, "显示耐药信息，默认开启");
+            //好感度区间中文
             foreach (JSONObject jsonobject in jsonData.instance.NpcHaoGanDuData.list)
             {
                 favorQuJianList.Add(jsonobject["QuJian"].list[0].I);
@@ -53,8 +60,6 @@ namespace Ventulus
 
             UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
             Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
-
-
 
             //备份图片
             foreach (var item in tShuXing.GetComponentsInChildren<Image>())
@@ -100,64 +105,68 @@ namespace Ventulus
             //【协程返回控制权】
             yield return null;
 
-            //调整【普通查看信息面板】
             Transform tShuXing = NPCInfoPanel.transform.Find("ShuXing");
+            Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
+            //调整【普通查看信息面板】
             //【删除所有子对象】
             //tShuXing.DestoryAllChild();
+            //【协程返回控制权】
+            //yield return null;
+            //隐藏原有词条
             for (int i = 0; i < tShuXing.childCount; i++)
             {
                 tShuXing.GetChild(i).gameObject.SetActive(false);
             }
-
-            //【协程返回控制权】
-            yield return null;
-
-            //int IndexPos = 0;
+            //普通界面增加两背景图
+            Transform tMisc = UnityEngine.Object.Instantiate<GameObject>(tFightShuXing.Find("Misc").gameObject, tShuXing).transform;
+            Transform tMisc2 = UnityEngine.Object.Instantiate<GameObject>(tFightShuXing.Find("Misc2").gameObject, tShuXing).transform;
 
             //【新建词条子对象】
-            Transform tAction = MakeNewCiTiao("行动", tShuXing, 1);
+            Transform tAction = MakeNewCiTiao("行动", tShuXing, 1, 10);
 
 
-            Transform tZhuangTai = MakeNewCiTiao("状态", tShuXing, 2);
+            Transform tZhuangTai = MakeNewCiTiao("状态", tShuXing, 2, 6);
 
 
-            Transform tNianLing = MakeNewCiTiao("年龄", tShuXing, 3);
+            Transform tNianLing = MakeNewCiTiao("年龄", tShuXing, 3, 7);
 
 
-            Transform tQiXue = MakeNewCiTiao("气血", tShuXing, 4);
+            Transform tQiXue = MakeNewCiTiao("气血", tShuXing, 4, 3);
 
 
-            Transform tZiZhi = MakeNewCiTiao("资质", tShuXing, 5);
+            Transform tZiZhi = MakeNewCiTiao("资质", tShuXing, 5, 8);
 
 
-            Transform tWuXing = MakeNewCiTiao("悟性", tShuXing, 6);
+            Transform tWuXing = MakeNewCiTiao("悟性", tShuXing, 6, 9);
 
 
-            Transform tDunSu = MakeNewCiTiao("遁速", tShuXing, 7);
+            Transform tDunSu = MakeNewCiTiao("遁速", tShuXing, 7, 10);
 
 
-            Transform tShenShi = MakeNewCiTiao("神识", tShuXing, 8);
+            Transform tShenShi = MakeNewCiTiao("神识", tShuXing, 8, 11);
 
 
 
             //8左8右
 
-            Transform tQingFen = MakeNewCiTiao("好感", tShuXing, 11);
+            Transform tQingFen = MakeNewCiTiao("好感", tShuXing, 11, 4);
 
 
-            Transform tGuanXi = MakeNewCiTiao("关系", tShuXing, 12);
+            Transform tGuanXi = MakeNewCiTiao("关系", tShuXing, 12, 9);
 
 
-            Transform tXingGe = MakeNewCiTiao("性格", tShuXing, 13);
+            Transform tXingGe = MakeNewCiTiao("性格", tShuXing, 13, 11);
 
 
-            Transform tXiuWei = MakeNewCiTiao("修为", tShuXing, 14);
+            Transform tXiuWei = MakeNewCiTiao("修为", tShuXing, 14, 5);
 
 
-            Transform tType = MakeNewCiTiao("类型", tShuXing, 15);
+            Transform tType = MakeNewCiTiao("类型", tShuXing, 15, 2);
 
 
-            Transform tTag = MakeNewCiTiao("标签", tShuXing, 16);
+            Transform tTag = MakeNewCiTiao("标签", tShuXing, 16, 6);
+
+            
 
             //【协程返回控制权】
             yield return null;
@@ -191,28 +200,31 @@ namespace Ventulus
             yield return null;
 
             //调整【战斗探查信息面板】
-            Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
-
-
+            
+            //隐藏原有词条
+            for (int i = 1; i < 5; i++)
+            {
+                tFightShuXing.GetChild(i).gameObject.SetActive(false);
+            }
+            //上移
+            Transform tTitle2 = tFightShuXing.Find("Title");
+            v3 = tTitle2.localPosition;
+            v3.y = 135f;
+            tTitle2.localPosition = v3;
             //增加种族
-            Transform tZhongZu2 = MakeNewCiTiao("种族", tFightShuXing, 1);
-            tZhongZu2.localPosition = new Vector3(30, 67.5f, 0);
+            Transform tZhongZu2 = MakeNewCiTiao("种族", tFightShuXing, 17, 8);
 
-            Transform tQiXue2 = tFightShuXing.Find("QiXue");
-            tQiXue2.localPosition = new Vector3(30, 22.5f, 0);
+            Transform tQiXue2 = MakeNewCiTiao("气血", tFightShuXing, 18, 3);
 
-            Transform tDunSu2 = tFightShuXing.Find("DunSu");
-            tDunSu2.localPosition = new Vector3(-15, -22.5f, 0);
+            Transform tDunSu2 = MakeNewCiTiao("遁速", tFightShuXing, 19, 10);
 
-            Transform tShenShi2 = tFightShuXing.Find("ShenShi");
-            tShenShi2.localPosition = new Vector3(-15, -67.5f, 0);
+            Transform tShenShi2 = MakeNewCiTiao("神识", tFightShuXing, 20, 11);
 
-            Transform tXiuWei2 = tFightShuXing.Find("XiuWei");
-            tXiuWei2.localPosition = new Vector3(30, -112.5f, 0);
+            Transform tXiuWei2 = MakeNewCiTiao("修为", tFightShuXing, 21, 5);
 
             //增加灵根简易
-            Transform tZLingGen2 = MakeNewCiTiao("灵根", tFightShuXing, 6);
-            tZLingGen2.localPosition = new Vector3(30, -157.5f, 0);
+            Transform tZLingGen2 = MakeNewCiTiao("灵根", tFightShuXing, 22, 2);
+
 
             //获取五行灵根UI
             //Instance.Logger.LogInfo("尝试获取五行灵根UI");
@@ -221,9 +233,10 @@ namespace Ventulus
             //GameObject goLingGen = tShuXingPanel.Find().gameObject;
             //Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
 
+            
 
         }
-        public static Transform MakeNewCiTiao(string name, Transform tShuXing, int pos)
+        public static Transform MakeNewCiTiao(string name, Transform tShuXing, int pos = 1, int imageindex = 2)
         {
             Transform transform = tShuXing.Find(name);
             if (transform == null)
@@ -231,16 +244,19 @@ namespace Ventulus
                 transform = UnityEngine.Object.Instantiate<GameObject>(Instance.CiTiao, tShuXing).transform;
                 transform.name = name;
                 transform.Find("Title").GetComponent<Text>().text = name + ":";
+                transform.Find("Icon").GetComponent<Image>().sprite = Instance.IconImage[imageindex].GetComponent<Image>().sprite;
                 IndexPosition(transform, pos);
             }
             return transform;
         }
-        public static void IndexPosition(Transform tCiTiao, int index)
+        public static void IndexPosition(Transform tCiTiao, int index = 1)
         {
             if (index < 9)
                 v3 = new Vector3(-130f, 202.5f - 45f * index, 0);
-            else
+            else if (index < 17)
                 v3 = new Vector3(130f, 202.5f - 45f * (index - 8), 0);
+            else if (index < 25)
+                v3 = new Vector3(0f, 135f - 45f * (index - 16), 0);
             tCiTiao.localPosition = v3;
         }
         public class PointerItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
@@ -432,6 +448,9 @@ namespace Ventulus
             {232,"王登"},
             {241,"弃牌隐虚破（废弃）"},
             {251,"万魂殿"},
+            //以下为模组
+            {765,"云依专属"},
+            {7365,"林沐心"},
         };
         private static Dictionary<int, string> NPCXingGe = new Dictionary<int, string>()
         {
@@ -532,6 +551,8 @@ namespace Ventulus
             {102,"吞云大圣"},
             {103,"恶饕老祖"},
             {104,"金虹剑仙"},
+            //以下为模组
+            {392,"云依专属"},
         };
         private static Dictionary<int, string> NPCStatus = new Dictionary<int, string>()
         {
@@ -547,6 +568,15 @@ namespace Ventulus
             {21,"道侣受邀"},
         };
 
+        private static string StringNum(long Num)
+        {
+            if (ShowStringNum.Value)
+            {
+                return $"[{Num}]";
+            }
+            else
+                return string.Empty;
+        }
 
         [HarmonyPatch(typeof(UINPCInfoPanel))]
         class UINPCInfoPanel_Patch
@@ -558,11 +588,7 @@ namespace Ventulus
                 Instance.Logger.LogInfo("SetNPCInfoPrefix");
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 UINPCData npc = __instance.npc;
-                if (NPCEx.NPCIDToNew(npc.ID) >= 20000)
-                {
-                    //npc.RefreshData();
-                }
-                else
+                if (NPCEx.NPCIDToNew(npc.ID) < 20000)
                 {
                     Instance.Logger.LogWarning("出现原型NPC要设置完整信息！已拦截！");
                     return false;
@@ -610,17 +636,17 @@ namespace Ventulus
                 tShuXing.Find("神识/Text").GetComponent<Text>().text = npc.ShenShi.ToString();
 
                 //行动
-                tShuXing.Find("行动/Text").GetComponent<Text>().text = MakeNPCAtionStr(npc) + (ShowStringInt.Value ? npc.ActionID.ToString() : "");
+                tShuXing.Find("行动/Text").GetComponent<Text>().text = MakeNPCAtionStr(npc) + StringNum(npc.ActionID);
 
                 //类型
-                tShuXing.Find("类型/Text").GetComponent<Text>().text = (NPCType.ContainsKey(npc.NPCType) ? NPCType[npc.NPCType] : "未知") + (ShowStringInt.Value ? npc.NPCType.ToString() : "");
+                tShuXing.Find("类型/Text").GetComponent<Text>().text = (NPCType.ContainsKey(npc.NPCType) ? NPCType[npc.NPCType] : "未知") + StringNum(npc.NPCType);
 
 
                 //性格
-                tShuXing.Find("性格/Text").GetComponent<Text>().text = (NPCXingGe.ContainsKey(npc.XingGe) ? NPCXingGe[npc.XingGe] : "未知") + (ShowStringInt.Value ? npc.XingGe.ToString() : "") + (npc.XingGe < 10 ? "(正)" : "(邪)");
+                tShuXing.Find("性格/Text").GetComponent<Text>().text = (NPCXingGe.ContainsKey(npc.XingGe) ? NPCXingGe[npc.XingGe] : "未知") + (npc.XingGe < 10 ? "(正)" : "(邪)") + StringNum(npc.XingGe);
 
                 //标签
-                tShuXing.Find("标签/Text").GetComponent<Text>().text = (NPCTag.ContainsKey(npc.Tag) ? NPCTag[npc.Tag] : "未知") + (ShowStringInt.Value ? npc.Tag.ToString() : "");
+                tShuXing.Find("标签/Text").GetComponent<Text>().text = (NPCTag.ContainsKey(npc.Tag) ? NPCTag[npc.Tag] : "未知") + StringNum(npc.Tag);
 
                 //关系   
                 tShuXing.Find("关系/Text").GetComponent<Text>().text = MakeNPCGuanXiStr(npc);
@@ -629,13 +655,13 @@ namespace Ventulus
                 //"MaxExp":194400000最大值刚刚好用int装下，但要是*100就不够了
                 long maxexp = jsonData.instance.LevelUpDataJsonData[npc.Level.ToString()]["MaxExp"].i;
                 long percent = npc.json.GetField("exp").i * 100 / maxexp;
-                tShuXing.Find("修为/Text").GetComponent<Text>().text = $"{npc.LevelStr}({percent}%)";
+                tShuXing.Find("修为/Text").GetComponent<Text>().text = $"{npc.LevelStr}({percent}%)" + StringNum(npc.json.GetField("exp").i); ;
 
                 //状态
-                tShuXing.Find("状态/Text").GetComponent<Text>().text = MakeNPCZhuangTaiStr(npc) + (ShowStringInt.Value ? npc.ZhuangTai.ToString() : ""); ;
+                tShuXing.Find("状态/Text").GetComponent<Text>().text = MakeNPCZhuangTaiStr(npc) + StringNum(npc.ZhuangTai); ;
 
 
-                return false;
+                return true;
             }
 
 
@@ -647,8 +673,10 @@ namespace Ventulus
                 UINPCInfoPanel NPCInfoPanel = UINPCJiaoHu.Inst.InfoPanel;
                 Transform tFightShuXing = NPCInfoPanel.transform.Find("FightShuXing");
                 //手动激活战斗的查看属性
-                //NPCInfoPanel.ShuXing.SetActive(false);
-                //NPCInfoPanel.FightShuXing.SetActive(true);
+                NPCInfoPanel.ShuXing.SetActive(false);
+                NPCInfoPanel.FightShuXing.SetActive(true);
+                //强制关闭标签页
+                NPCInfoPanel.TabGroup.HideTab();
 
                 UINPCData npc = __instance.npc;
                 Instance.Logger.LogInfo(npc.json.ToString().ToCN());
@@ -667,6 +695,11 @@ namespace Ventulus
 
                 //种族+性别
                 tFightShuXing.Find("种族/Text").GetComponent<Text>().text = MakeZhongZuSexStr(npc);
+
+                tFightShuXing.Find("气血/Text").GetComponent<Text>().text = npc.HP.ToString();
+                tFightShuXing.Find("遁速/Text").GetComponent<Text>().text = npc.DunSu.ToString();
+                tFightShuXing.Find("神识/Text").GetComponent<Text>().text = npc.ShenShi.ToString();
+                tFightShuXing.Find("修为/Text").GetComponent<Text>().text = npc.LevelStr;
 
                 //灵根
                 tFightShuXing.Find("灵根/Text").GetComponent<Text>().text = MakeLingGenStr(npc);
@@ -763,7 +796,7 @@ namespace Ventulus
                     zhuangtaistr += $"(突破率{tupolv}%)";
                 }
             }
-            
+
             return zhuangtaistr;
         }
         private static string MakeNPCIDStr(int id)
@@ -815,7 +848,6 @@ namespace Ventulus
                     if (npc.ID == seaNPCID)
                     {
                         Instance.Logger.LogInfo($"发现无尽之海灵舟上的NPC eventid{monstar._EventId}staticId{staticId}seaNPCID{seaNPCID}SeaId{monstar.SeaId}");
-
                         //int BigSeaID = SeaEx.BigSeaHasSmallSeaIDDict.Keys.FirstOrDefault(key => SeaEx.BigSeaHasSmallSeaIDDict[key].Contains(monstar.SeaId));
                         int BigSeaID = Tools.instance.getPlayer().GetDaHaiIDBySeaID(monstar.SeaId);
                         if (BigSeaID > 0)
@@ -845,7 +877,7 @@ namespace Ventulus
                 {
                     //流派
                     tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(true);
-                    tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + (ShowStringInt.Value ? npc.LiuPai.ToString() : "");
+                    tZhuangBeiGongFaPanel.Find("LiuPai").GetComponent<Text>().text = "流派：" + (NPCLiuPai.ContainsKey(npc.LiuPai) ? NPCLiuPai[npc.LiuPai] : "未知") + StringNum(npc.LiuPai);
                 }
                 else
                 {
@@ -853,7 +885,8 @@ namespace Ventulus
                     tZhuangBeiGongFaPanel.Find("LiuPai").gameObject.SetActive(false);
                 }
 
-                if (npc.json.HasField("equipWeaponPianHao"))
+                //偏好开关
+                if (npc.json.HasField("equipWeaponPianHao") && ShowPianHaoInfo.Value)
                 {
                     //偏好
                     tZhuangBeiGongFaPanel.Find("PianHao").gameObject.SetActive(true);
@@ -930,6 +963,9 @@ namespace Ventulus
             [HarmonyPatch(nameof(UINPCWuDaoPanel.OnPanelShow))]
             public static void OnPanelShow_Postfix(UINPCWuDaoPanel __instance)
             {
+                if (!ShowWuDaoInfo.Value)
+                    return;
+
                 //UINPCData npc = Traverse.Create(__instance).Field("npc").GetValue<UINPCData>();
                 UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
                 if (npc == null) return;
@@ -949,7 +985,7 @@ namespace Ventulus
                 int wudao = 0;
                 if (npc.json.HasField("wudaoType"))
                     wudao = npc.json.GetField("wudaoType").I;
-                string strWuDaoLeiXing = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + (ShowStringInt.Value ? wudao.ToString() : "");
+                string strWuDaoLeiXing = (NPCWuDao.ContainsKey(wudao) ? NPCWuDao[wudao] : "未知") + StringNum(wudao);
                 WuDaoSVItem.LevelText.text = "悟道类型";
                 WuDaoSVItem.SkillText.text = "#s34#cb47a39" + strWuDaoLeiXing + Environment.NewLine;
 
@@ -962,7 +998,7 @@ namespace Ventulus
                 int LevelUpExp = jsonData.instance.WuDaoZhiData[WuDaoZhiLevel.ToString()]["LevelUpExp"].I;
                 string WuDaoZhiStr = $"#s34#cb47a39悟道值 #n{WuDaoZhi}/{LevelUpExp}({WuDaoZhiLevel})";
                 WuDaoSVItem.SkillText.text += WuDaoZhiStr + Environment.NewLine;
-                
+
             }
         }
         private static void MakeDaoChar(GameObject goDao)
@@ -982,11 +1018,12 @@ namespace Ventulus
             [HarmonyPatch(nameof(UINPCWuDaoSVItem.SetWuDao))]
             public static void SetWuDao_Postfix(UINPCWuDaoSVItem __instance, UINPCWuDaoData data)
             {
+                if (!ShowWuDaoInfo.Value)
+                    return;
                 //显示npc每一种悟道的经验
                 int nextexp = jsonData.instance.WuDaoJinJieJson[data.Level]["Max"].I;
                 string strExp = "#s34#cb47a39经验 #n" + data.Exp.ToString() + (data.Level < 5 ? $"/{nextexp}" : "") + Environment.NewLine;
                 __instance.SkillText.text += strExp;
-
             }
         }
 
@@ -999,7 +1036,8 @@ namespace Ventulus
             {
                 //调整【重要事件面板】
                 //因为每次内容都会清空，只能即时增加一条对象。
-
+                if (!ShowNaiYaoInfo.Value)
+                    return;
                 //耐药性结果字符串字典
                 Dictionary<int, string> DanYaoSeidToNaiYaoStr = new Dictionary<int, string>();
                 UINPCData npc = UINPCJiaoHu.Inst.InfoPanel.npc;
