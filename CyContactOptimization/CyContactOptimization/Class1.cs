@@ -15,10 +15,11 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using YSGame;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.4")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.5")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Start()
@@ -29,6 +30,7 @@ namespace Ventulus
 
         }
         public static CyContactOptimization Instance;
+        private int CyOpenInfoPanel;
         void Awake()
         {
             Instance = this;
@@ -81,7 +83,7 @@ namespace Ventulus
                 //增加查看标签
                 GameObject goChaKan = MakeNewBiaoQian("查看");
                 goChaKan.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickChaKan(npcId); });
-                
+
 
                 //收取
                 GameObject goShouQu = MakeNewBiaoQian("收取");
@@ -125,10 +127,6 @@ namespace Ventulus
                     npc.RefreshOldNpcData();
                     npc.IsFight = true;
 
-                    UINPCData npc609 = new UINPCData(609);
-                    npc609.RefreshData();
-                    UINPCJiaoHu.Inst.NowJiaoHuNPC = npc609;
-
                     UINPCJiaoHu.Inst.NowJiaoHuEnemy = npc;
                     UINPCJiaoHu.Inst.InfoPanel.npc = npc;
                     CyUIMag.inst.Close();
@@ -145,9 +143,7 @@ namespace Ventulus
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.UnHideTab();
                 }
 
-
-
-                //PanelMamager.CanOpenOrClose=true;
+                Instance.CyOpenInfoPanel = npcId;
 
 
                 return null;
@@ -261,7 +257,7 @@ namespace Ventulus
                 if (tShouQu) tShouQu.gameObject.SetActive(__instance.isSelect && hasShouQuItem(__instance.npcId));
                 //工具人是否能查看的开关
                 //if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly && NPCEx.NPCIDToNew(__instance.npcId) >= 20000);
- 
+
 
                 ArrangeLabelPositions(__instance.transform);
             }
@@ -334,6 +330,19 @@ namespace Ventulus
             {
                 var t = __instance.transform.Find("List/Viewport/Content");
                 SortNpcCells(t);
+                Instance.Logger.LogInfo(Instance.CyOpenInfoPanel);
+                //尝试选中刚才的npc
+                if (Instance.CyOpenInfoPanel > 0)
+                {
+                    CyFriendCell CyFriendCell = __instance.friendCells.FirstOrDefault(x => x.npcId == Instance.CyOpenInfoPanel);
+                    if (CyFriendCell != null)
+                    {
+                        Instance.Logger.LogInfo("找到要选中的npccell" + Instance.CyOpenInfoPanel);
+                        CyFriendCell.Click();
+                    }
+                }
+
+                Instance.CyOpenInfoPanel = -1;
             }
 
             [HarmonyPrefix]
@@ -416,6 +425,24 @@ namespace Ventulus
 
             }
         }
+        [HarmonyPatch(typeof(UINPCJiaoHu))]
+        class UINPCJiaoHu_Patch
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCJiaoHu.HideNPCInfoPanel))]
+            public static void HideNPCInfoPanel_Postfix()
+            {
+                Instance.Logger.LogInfo("关闭NPC信息面板");
+                Instance.Logger.LogInfo(Instance.CyOpenInfoPanel);
+                if (Instance.CyOpenInfoPanel > 0)
+                {
+                    //重新打开传音面板，比较绿皮
+                    Instance.Logger.LogInfo("重新打开传音符");
+                    Instance.Logger.LogInfo(Instance.CyOpenInfoPanel);
+                    PanelMamager.inst.OpenPanel(PanelMamager.PanelType.传音符, 1);
 
+                }
+            }
+        }
     }
 }
