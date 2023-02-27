@@ -17,12 +17,16 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.7")]
+    [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.8.0")]
     public class MoreNPCInfo : BaseUnityPlugin
     {
         void Start()
         {
             Logger.LogInfo("更多NPC信息加载成功！");
+            ShowStringNum = Config.Bind<bool>("Ventulus", "显示代表信息的数值", false, "显示代表信息的数值，默认关闭");
+            ShowPianHaoInfo = Config.Bind<bool>("Ventulus", "显示偏好信息", true, "显示偏好信息，默认开启");
+            ShowWuDaoInfo = Config.Bind<bool>("Ventulus", "显示更多悟道信息", true, "显示更多悟道信息，默认开启");
+            ShowNaiYaoInfo = Config.Bind<bool>("Ventulus", "显示耐药信息", true, "显示耐药信息，默认开启");
             var harmony = new Harmony("Ventulus.MCS.MoreNPCInfo");
             harmony.PatchAll();
 
@@ -32,8 +36,6 @@ namespace Ventulus
         public static MoreNPCInfo Instance;
         private static List<string> favorStrList = new List<string>();
         private static List<int> favorQuJianList = new List<int>();
-        private static List<int> SeaNPCIDList = new List<int>();
-        //public static ConfigEntry<bool> MaskByCondition;
         public static ConfigEntry<bool> ShowStringNum;
         public static ConfigEntry<bool> ShowPianHaoInfo;
         public static ConfigEntry<bool> ShowWuDaoInfo;
@@ -46,11 +48,7 @@ namespace Ventulus
 
         void Init(MessageData data = null)
         {
-            //MaskByCondition = Config.Bind<bool>("config", "MaskByCondition", true, "按条件遮挡部分信息，默认开启");
-            ShowStringNum = Config.Bind<bool>("config", "显示代表信息的数值", false, "显示代表信息的数值，默认关闭");
-            ShowPianHaoInfo = Config.Bind<bool>("config", "显示偏好信息", true, "显示偏好信息，默认开启");
-            ShowWuDaoInfo = Config.Bind<bool>("config", "显示更多悟道信息", true, "显示更多悟道信息，默认开启");
-            ShowNaiYaoInfo = Config.Bind<bool>("config", "显示耐药信息", true, "显示耐药信息，默认开启");
+
             //好感度区间中文
             foreach (JSONObject jsonobject in jsonData.instance.NpcHaoGanDuData.list)
             {
@@ -166,7 +164,7 @@ namespace Ventulus
 
             Transform tTag = MakeNewCiTiao("标签", tShuXing, 16, 6);
 
-            
+
 
             //【协程返回控制权】
             yield return null;
@@ -200,7 +198,7 @@ namespace Ventulus
             yield return null;
 
             //调整【战斗探查信息面板】
-            
+
             //隐藏原有词条
             for (int i = 1; i < 5; i++)
             {
@@ -224,16 +222,6 @@ namespace Ventulus
 
             //增加灵根简易
             Transform tZLingGen2 = MakeNewCiTiao("灵根", tFightShuXing, 22, 2);
-
-
-            //获取五行灵根UI
-            //Instance.Logger.LogInfo("尝试获取五行灵根UI");
-            //Transform tShuXingPanel = SingletonMono<TabUIMag>.Instance.transform.Find("TabSelect/Panel/属性");
-            //if (tShuXingPanel != null) Instance.Logger.LogInfo("找到属性面板");
-            //GameObject goLingGen = tShuXingPanel.Find().gameObject;
-            //Instance.LingGen = UnityEngine.Object.Instantiate<GameObject>(goLingGen);
-
-            
 
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing, int pos = 1, int imageindex = 2)
@@ -1103,5 +1091,43 @@ namespace Ventulus
             {26,"悟道点药"},
             {37,"避劫丹"},
         };
+        private static Dictionary<int, int> FavorDict = new Dictionary<int, int>
+        {
+            { 1, 5 },
+            { 2, 6 },
+            { 3, 8 }
+        };
+
+        [HarmonyPatch(typeof(UINPCQingJiao))]
+        class UINPCQingJiao_Patch
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch("GongFaSlotAction")]
+            public static bool GongFaSlotAction_Prefix(int pinJie, JSONObject skill)
+            {
+
+                string HaoGanDuStr = favorStrList[FavorDict[pinJie] - 1];
+                UIPopTip.Inst.Pop("请教此功法需要好感度达到" + HaoGanDuStr);
+
+                int qingFenCost = NPCEx.GetQingFenCost(skill, isGongFa: true);
+                UIPopTip.Inst.Pop("请教此功法需要情分" + qingFenCost.ToString());
+
+                return true;
+            }
+
+            [HarmonyPrefix]
+            [HarmonyPatch("ShenTongSlotAction")]
+            public static bool ShenTongSlotAction_Prefix(int pinJie, JSONObject skill)
+            {
+
+                string HaoGanDuStr = favorStrList[FavorDict[pinJie] - 1];
+                UIPopTip.Inst.Pop("请教此功法需要好感度达到" + HaoGanDuStr);
+
+                int qingFenCost = NPCEx.GetQingFenCost(skill, isGongFa: false);
+                UIPopTip.Inst.Pop("请教此功法需要情分" + qingFenCost.ToString());
+
+                return true;
+            }
+        }
     }
 }

@@ -19,15 +19,15 @@ using YSGame.EquipRandom;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.LianDanShowYaoZhi", "炼丹显示药质", "1.0")]
+    [BepInPlugin("Ventulus.MCS.LianDanShowYaoZhi", "炼丹显示药质", "1.0.0")]
     public class LianDanShowYaoZhi : BaseUnityPlugin
     {
         void Start()
         {
             Logger.LogInfo("炼丹丹方丹药草药显示药性药力加载成功！");
-            ShowCaoYaoYaoZhi = Config.Bind<bool>("config", "显示草药药质", true, "草药显示药性和药力");
-            ShowDanYaoYaoZhi = Config.Bind<bool>("config", "显示丹药药质", true, "丹药和丹方显示炼制需要的药性和药力");
-            ShowLianDanYaoZhi = Config.Bind<bool>("config", "显示炼丹药质", true, "炼丹界面即时显示放入草药的总和药性和药力");
+            ShowCaoYaoYaoZhi = Config.Bind<bool>("Ventulus", "显示草药药质", true, "草药显示药性和药力");
+            ShowDanYaoYaoZhi = Config.Bind<bool>("Ventulus", "显示丹药药质", true, "丹药和丹方显示炼制需要的药性和药力");
+            ShowLianDanYaoZhi = Config.Bind<bool>("Ventulus", "显示炼丹药质", true, "炼丹界面即时显示放入草药的总和药性和药力");
             var harmony = new Harmony("Ventulus.MCS.LianDanShowYaoZhi");
             harmony.PatchAll();
         }
