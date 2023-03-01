@@ -10,12 +10,15 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static UIPopupList;
 
 
 namespace Ventulus
@@ -23,9 +26,14 @@ namespace Ventulus
     [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.0.0")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
+        void Awake()
+        {
+            Instance = this;
+            TargetPopulation = Config.Bind<PopulationEnum>("Ventulus", "调控目标人数", PopulationEnum.Less, new ConfigDescription("分为五档"));
+        }
         void Start()
         {
-            Logger.LogInfo("修仙人口动态调整加载成功！");
+            Logger.LogInfo("加载成功！");
 
             var harmony = new Harmony("Ventulus.MCS.PopulationDynamicsAdjustment");
             harmony.PatchAll();
@@ -35,11 +43,29 @@ namespace Ventulus
 
         public static PopulationDynamicsAdjustment Instance;
         private DateTime LastJieSuanTime;
-
-        void Awake()
+        public static ConfigEntry<PopulationEnum> TargetPopulation;
+        public enum PopulationEnum
         {
-            Instance = this;
+            [Description("很少(600)")]
+            Little = 600,
+            [Description("较少(900)")]
+            Less = 900,
+            [Description("中等(1200)")]
+            Moderate = 1200,
+            [Description("较多(1500)")]
+            More = 1500,
+            [Description("很多(1800)")]
+            Much = 1800,
+
         }
+
+        private static int TotalPopulation;
+        private WeightDictionary NPCBigLevelStatistics;
+        private WeightDictionary NPCTypeStatistics;
+
+        private WeightDictionary NPCBigLevelTarget;
+        private WeightDictionary NPCTypeTarget;
+        private WeightDictionary NPCBigLevelAdjustment;
 
         [HarmonyPatch(typeof(NpcJieSuanManager))]
         class NpcJieSuanManager_Patch
@@ -57,19 +83,21 @@ namespace Ventulus
 
         public void AfterJieSuanStatistics(MessageData data = null)
         {
-            Instance.Logger.LogInfo("结算完成！");
-            Instance.Logger.LogInfo(NpcJieSuanManager.inst.JieSuanTime);
-            //每次结算统计
-            //StartCoroutine(StatisticsPopulation());
 
+            Logger.LogInfo("结算完成！");
+            Logger.LogInfo(NpcJieSuanManager.inst.JieSuanTime);
+            //每次结算统计
+            StatisticsPopulation();
+
+            //每年六月
             //return;
             StartCoroutine(AdjustPopulation());
 
         }
 
-        public static DateTime RecentJune(DateTime lasttime)
+        public static DateTime RecentJune(DateTime lasttime, int month = 6)
         {
-            var temptime = new DateTime(lasttime.Year, 6, lasttime.Day);
+            var temptime = new DateTime(lasttime.Year, month, lasttime.Day);
             if (temptime < lasttime)
                 return temptime.AddYears(1);
             else
@@ -80,66 +108,63 @@ namespace Ventulus
         {
             DateTime tempdate = Instance.LastJieSuanTime;
             DateTime NowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
-            while (NowJieSuanTime > RecentJune(tempdate))
+            while (NowJieSuanTime > RecentJune(tempdate, 6))
             {
+
+                Logger.LogMessage("经过六月份！");
+                Logger.LogMessage(RecentJune(tempdate).ToString());
+                ///
                 yield return null;
-                Instance.Logger.LogMessage("经过六月份！");
-                Instance.Logger.LogMessage(RecentJune(tempdate).ToString());
+                StatisticsPopulation();
                 ///
-                //子协程后再进行父协程
-                yield return StartCoroutine(StatisticsPopulation());
+                yield return null;
+                NPCBigLevelTarget = new WeightDictionary(TargetBigLevelWeight, NPCBigLevel);
+                NPCTypeTarget = new WeightDictionary(TargetTypeWeight, NPCType);
+                Dictionary<int, float> subdict = NPCBigLevelTarget.PositiveSubtraction(NPCBigLevelStatistics.WeightDict);
+                NPCBigLevelAdjustment = new WeightDictionary(subdict, NPCBigLevel);
                 ///
+                yield return null;
                 tempdate = tempdate.AddYears(1);
             }
 
         }
-        IEnumerator StatisticsPopulation()
+        public void StatisticsPopulation()
         {
-            yield return null;
-            Instance.Logger.LogInfo("开始统计");
+
+            Logger.LogInfo("开始统计");
             TotalPopulation = 0;
-            NPCBigLevelStatistics = new Dictionary<int, int>();
-            NPCTypeStatistics = new Dictionary<int, int>();
+            NPCBigLevelStatistics = new WeightDictionary(NPCBigLevel);
+            NPCTypeStatistics = new WeightDictionary(NPCType);
+
             foreach (JSONObject avatar in jsonData.instance.AvatarJsonData.list)
             {
                 int id = avatar.GetInt("id");
                 if (id < 20000) continue;
                 TotalPopulation++;
                 int biglevel = (avatar["Level"].I - 1) / 3 + 1;
-                AddDict(NPCBigLevelStatistics, biglevel);
+                NPCBigLevelStatistics.AddWeight(biglevel);
 
                 int npctype = avatar["Type"].I;
-                AddDict(NPCTypeStatistics, npctype);
+                NPCTypeStatistics.AddWeight(npctype);
             }
 
-            yield return null;
-            Instance.Logger.LogInfo("统计总人口");
-            Instance.Logger.LogInfo(TotalPopulation);
 
-            Instance.Logger.LogInfo("按境界");
-            foreach (var item in NPCBigLevelStatistics)
-            {
-                Instance.Logger.LogInfo(item.ToString());
-            }
+            Logger.LogInfo("统计总人口");
+            Logger.LogInfo(TotalPopulation);
 
-            Instance.Logger.LogInfo("按类型");
-            foreach (var item in NPCTypeStatistics)
-            {
-                Instance.Logger.LogInfo(item.ToString());
-            }
+            Logger.LogInfo("按境界");
+            Logger.LogInfo(NPCBigLevelStatistics.ToString());
+
+            Logger.LogInfo("按类型");
+            Logger.LogInfo(NPCTypeStatistics.ToString());
+
+            Logger.LogInfo("目标人数");
+            Logger.LogInfo((int)TargetPopulation.Value);
+
         }
 
-        private static void AddDict(Dictionary<int, int> dict, int key)
-        {
-            AddDict(dict, key, 1);
-        }
-        private static void AddDict(Dictionary<int, int> dict, int key, int num)
-        {
-            if (dict.ContainsKey(key))
-                dict[key] += num;
-            else
-                dict.Add(key, num);
-        }
+
+
         private static Dictionary<int, string> NPCType = new Dictionary<int, string>()
         {
             {1,"竹山"},
@@ -168,41 +193,158 @@ namespace Ventulus
             {24,"废弃"},
             {25,"万魂殿"},
         };
-        private static Dictionary<int, int> NPCBigLevelStatistics = new Dictionary<int, int>();
-        private static Dictionary<int, int> NPCTypeStatistics = new Dictionary<int, int>();
-        private static int TotalPopulation = 0;
+        private static Dictionary<int, float> TargetTypeWeight = new Dictionary<int, float>()
+        {
+            {1,80},
+            {2,80},
+            {3,80},
+            {4,80},
+            {5,80},
+            {6,10},
+            {7,10},
+            {8,10},
+            {9,10},
+            {10,160},
+            {11,20},
+            {12,20},
+            {13,20},
+            {14,20},
+            {15,120},
+            {16,120},
+            {17,20},
+            {18,10},
+            {19,10},
+            {20,10},
+            {21,10},
+            {22,10},
+            {23,20},
+            {24,0},
+            {25,10},
+        };
+        private static Dictionary<int, string> NPCBigLevel = new Dictionary<int, string>()
+        {
+            {1,"练气"},
+            {2,"筑基"},
+            {3,"金丹"},
+            {4,"元婴"},
+            {5,"化神"},
+        };
+        private static Dictionary<int, float> TargetBigLevelWeight = new Dictionary<int, float>()
+        {
+            {1,120},
+            {2,60},
+            {3,20},
+            {4,5},
+            {5,1},
+        };
+
+
     }
 
-    class WeightDictionary
+    public class WeightDictionary
     {
-        public Dictionary<int, int> WeightDict
+        public Dictionary<int, float> WeightDict
         {
-            get { return WeightDict; }
-            set { WeightDict = new Dictionary<int, int>(value); }
+            get;
+            set;
         }
         public Dictionary<int, string> NameDict
         {
-            get { return NameDict; }
-            set { NameDict = new Dictionary<int, string>(value); }
+            get;
+            set;
         }
-        private Dictionary<int, int> _tempDict;
+        private SortedDictionary<int, float> _sortDict;
+        private Dictionary<int, float> _percentDict;
 
-        WeightDictionary()
-            : this(new Dictionary<int, int>())
-        { }
-        WeightDictionary(Dictionary<int, int> weightdict)
-            : this(weightdict, new Dictionary<int, string>())
-        { }
 
-        WeightDictionary(Dictionary<int, int> weightdict, Dictionary<int, string> namedict)
+
+        public WeightDictionary()
         {
-            WeightDict = new Dictionary<int, int>(weightdict);
+            WeightDict = new Dictionary<int, float>();
+            NameDict = new Dictionary<int, string>();
+        }
+        public WeightDictionary(Dictionary<int, float> weightdict)
+        {
+            WeightDict = new Dictionary<int, float>(weightdict);
+            NameDict = new Dictionary<int, string>();
+        }
+        public WeightDictionary(Dictionary<int, string> namedict)
+        {
+            WeightDict = new Dictionary<int, float>();
             NameDict = new Dictionary<int, string>(namedict);
         }
-        WeightDictionary(WeightDictionary weightdictionary)
+
+        public WeightDictionary(Dictionary<int, float> weightdict, Dictionary<int, string> namedict)
         {
-            WeightDict = new Dictionary<int, int>(weightdictionary.WeightDict);
+            WeightDict = new Dictionary<int, float>(weightdict);
+            NameDict = new Dictionary<int, string>(namedict);
+        }
+        public WeightDictionary(WeightDictionary weightdictionary)
+        {
+            WeightDict = new Dictionary<int, float>(weightdictionary.WeightDict);
             NameDict = new Dictionary<int, string>(weightdictionary.NameDict);
+        }
+        public void AddWeight(int key)
+        {
+            AddWeight(key, 1);
+        }
+        public void AddWeight(int key, float num)
+        {
+            if (WeightDict.ContainsKey(key))
+                WeightDict[key] += num;
+            else
+                WeightDict.Add(key, num);
+        }
+        public override string ToString()
+        {
+            StringBuilder SB = new StringBuilder();
+            SB.Append(Environment.NewLine);
+            _sortDict = new SortedDictionary<int, float>(WeightDict);
+            foreach (var item in _sortDict)
+            {
+                SB.Append("[");
+                SB.Append(item.Key);
+                if (NameDict.ContainsKey(item.Key))
+                    SB.Append(NameDict[item.Key]);
+                SB.Append(",");
+                SB.Append(item.Value);
+                SB.Append("]");
+                SB.Append(Environment.NewLine);
+            }
+            return SB.ToString();
+        }
+        public void Normalization()
+        {
+            WeightDict = Normalization(WeightDict);
+        }
+        public Dictionary<int, float> Normalization(Dictionary<int, float> weightdict)
+        {
+            _sortDict = new SortedDictionary<int, float>();
+            float _sum = weightdict.Values.Where(x => x > 0).Sum();
+            foreach (var item in weightdict)
+            {
+                _sortDict.Add(item.Key, item.Value > 0 ? item.Value / _sum : 0);
+            }
+            return new Dictionary<int, float>(_sortDict);
+        }
+        public Dictionary<int, float> PositiveSubtraction(Dictionary<int, float> percentdict2)
+        {
+            this.Normalization();
+            _percentDict = Normalization(percentdict2);
+            _sortDict = new SortedDictionary<int, float>();
+            foreach (var item in WeightDict)
+            {
+                if (_percentDict.ContainsKey(item.Key))
+                {
+                    float m = item.Value - _percentDict[item.Key];
+                    _sortDict.Add(item.Key, m > 0 ? m : 0);
+                }
+                else
+                {
+                    _sortDict.Add(item.Key, item.Value);
+                }
+            }
+            return new Dictionary<int, float>(_sortDict);
         }
     }
 }
