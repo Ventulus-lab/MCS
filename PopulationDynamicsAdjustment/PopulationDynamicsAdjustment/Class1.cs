@@ -97,7 +97,7 @@ namespace Ventulus
 
         public static DateTime RecentJune(DateTime lasttime, int month = 6)
         {
-            var temptime = new DateTime(lasttime.Year, month, lasttime.Day);
+            DateTime temptime = new DateTime(lasttime.Year, month, lasttime.Day);
             if (temptime < lasttime)
                 return temptime.AddYears(1);
             else
@@ -126,7 +126,7 @@ namespace Ventulus
                 yield return null;
                 tempdate = tempdate.AddYears(1);
             }
-
+            Logger.LogMessage("人口调整完成");
         }
         public void StatisticsPopulation()
         {
@@ -140,8 +140,10 @@ namespace Ventulus
             {
                 int id = avatar.GetInt("id");
                 if (id < 20000) continue;
+
                 TotalPopulation++;
-                int biglevel = (avatar["Level"].I - 1) / 3 + 1;
+
+                int biglevel = LevelToBigLevel(avatar["Level"].I);
                 NPCBigLevelStatistics.AddWeight(biglevel);
 
                 int npctype = avatar["Type"].I;
@@ -163,7 +165,14 @@ namespace Ventulus
 
         }
 
-
+        public static int LevelToBigLevel(int level)
+        {
+            return (level - 1) / 3 + 1;
+        }
+        public static int BigLevelToLevel(int biglevel)
+        {
+            return (biglevel - 1) * 3 + 1;
+        }
 
         private static Dictionary<int, string> NPCType = new Dictionary<int, string>()
         {
@@ -237,8 +246,6 @@ namespace Ventulus
             {4,5},
             {5,1},
         };
-
-
     }
 
     public class WeightDictionary
@@ -255,8 +262,6 @@ namespace Ventulus
         }
         private SortedDictionary<int, float> _sortDict;
         private Dictionary<int, float> _percentDict;
-
-
 
         public WeightDictionary()
         {
@@ -320,10 +325,10 @@ namespace Ventulus
         public Dictionary<int, float> Normalization(Dictionary<int, float> weightdict)
         {
             _sortDict = new SortedDictionary<int, float>();
-            float _sum = weightdict.Values.Where(x => x > 0).Sum();
+            float sum = weightdict.Values.Where(x => x > 0).Sum();
             foreach (var item in weightdict)
             {
-                _sortDict.Add(item.Key, item.Value > 0 ? item.Value / _sum : 0);
+                _sortDict.Add(item.Key, item.Value > 0 ? item.Value / sum : 0);
             }
             return new Dictionary<int, float>(_sortDict);
         }

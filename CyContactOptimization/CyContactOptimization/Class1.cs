@@ -19,22 +19,23 @@ using YSGame;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.5")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.6.0")]
     public class CyContactOptimization : BaseUnityPlugin
     {
+        void Awake()
+        {
+            Instance = this;
+        }
         void Start()
         {
-            Logger.LogInfo("传音符联系人优化加载成功！");
+            Logger.LogInfo("加载成功！");
             var harmony = new Harmony("Ventulus.MCS.CyContactOptimization");
             harmony.PatchAll();
 
         }
         public static CyContactOptimization Instance;
         private int CyOpenInfoPanel;
-        void Awake()
-        {
-            Instance = this;
-        }
+
         [HarmonyPatch(typeof(CyFriendCell))]
         class CyFriendCell_Patch
         {
@@ -169,6 +170,7 @@ namespace Ventulus
 
                 Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
                 Dictionary<string, List<EmailData>> hasReadEmailDictionary = PlayerEx.Player.emailDateMag.hasReadEmailDictionary;
+                List<int> oldIdlist = new List<int>();
 
                 if (newEmailDictionary.Count > 0 && newEmailDictionary.ContainsKey(npcId.ToString()))
                 {
@@ -188,6 +190,7 @@ namespace Ventulus
                         else if (emailData.actionId == 2)
                         {
                         }
+
                     }
                 }
                 if (hasReadEmailDictionary.Count > 0 && hasReadEmailDictionary.ContainsKey(npcId.ToString()))
@@ -208,8 +211,23 @@ namespace Ventulus
                         else if (emailData.actionId == 2)
                         {
                         }
+
                     }
                 }
+                //如果是原型工具人寄的信，则信字典里只有EmailData(npcId, isOld: true, oldId, sendTime)，信具体内容另在他处
+                //天机阁交易人固定id912，信的oldid是2082912 + 交换序号PlayerEx.Player.ExchangeMeetingID，
+                if (npcId == 912 && Tools.instance.getPlayer().NewChuanYingList.Count > 0)
+                {
+                    foreach (JSONObject mail in Tools.instance.getPlayer().NewChuanYingList.list)
+                    {
+                        if (mail.HasField("AvatarID") && mail["AvatarID"].I == 912 && mail.HasField("ItemID") && mail["ItemID"].I > 0 && mail["ItemHasGet"].b == false)
+                        {
+                            Tools.instance.getPlayer().addItem(mail["ItemID"].I, 1, null, ShowText: true);
+                            mail.SetField("ItemHasGet", val: true);
+                        }   
+                    }
+                }
+
                 CyUIMag.inst.cyEmail.cySendBtn.Hide();
                 CyUIMag.inst.cyEmail.Init(npcId);
                 return null;
@@ -231,6 +249,17 @@ namespace Ventulus
                     List<EmailData> emails = hasReadEmailDictionary[npcId.ToString()];
                     if (emails.FirstOrDefault(emailData => emailData.actionId == 1 && emailData.item[1] > 0) != null)
                         has = true;
+                }
+                if (npcId == 912 && Tools.instance.getPlayer().NewChuanYingList.Count > 0)
+                {
+                    foreach (JSONObject mail in Tools.instance.getPlayer().NewChuanYingList.list)
+                    {
+                        if (mail.HasField("AvatarID") && mail["AvatarID"].I == 912 && mail.HasField("ItemID") && mail["ItemID"].I > 0 && mail["ItemHasGet"].b == false)
+                        {
+                            has = true;
+                            break;
+                        }
+                    }
                 }
                 return has;
             }
