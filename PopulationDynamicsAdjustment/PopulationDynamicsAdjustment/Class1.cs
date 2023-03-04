@@ -8,6 +8,7 @@ using JSONClass;
 using KBEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PaiMai;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static UIPopupList;
+using static UltimateSurvival.ItemProperty;
 
 
 namespace Ventulus
@@ -31,6 +33,8 @@ namespace Ventulus
         {
             Instance = this;
             TargetPopulation = Config.Bind<PopulationEnum>("Ventulus", "调控目标人数", PopulationEnum.Less, new ConfigDescription("分为五档"));
+            AllowSpecialLiuPai = Config.Bind<bool>("Ventulus", "允许随机NPC使用特定流派", true, new ConfigDescription("若为false，则随机生成NPC会避开“倪旭欣”等专用流派"));
+            StatisticsBroadcast = Config.Bind<bool>("Ventulus", "播报每年人口统计结果", true, new ConfigDescription("通过传音符特定人物播报"));
         }
         void Start()
         {
@@ -39,12 +43,16 @@ namespace Ventulus
             var harmony = new Harmony("Ventulus.MCS.PopulationDynamicsAdjustment");
             harmony.PatchAll();
 
+            MessageMag.Instance.Register(MessageName.MSG_GameInitFinish, new Action<MessageData>(this.AddCy100000));
             MessageMag.Instance.Register(MessageName.MSG_Npc_JieSuan_COMPLETE, new Action<MessageData>(this.AfterJieSuanStatistics));
         }
 
         public static PopulationDynamicsAdjustment Instance;
         private static DateTime LastJieSuanTime;
         public static ConfigEntry<PopulationEnum> TargetPopulation;
+        public static ConfigEntry<bool> AllowSpecialLiuPai;
+        private static string Cy100000 = @"{""id"":100000,""AvatarID"":2,""info"":""{DiDian}"",""Type"":3,""DelayTime"":[],""TaskID"":0,""TaskIndex"":[],""WeiTuo"":0,""ItemID"":0,""valueID"":[],""value"":[],""SPvalueID"":0,""StarTime"":"""",""EndTime"":"""",""Level"":[],""HaoGanDu"":0,""EventValue"":[],""fuhao"":"""",""IsOnly"":1,""IsAdd"":0,""IsDelete"":0,""NPCLevel"":[],""IsAlive"":0}";
+        public static ConfigEntry<bool> StatisticsBroadcast;
         public enum PopulationEnum
         {
             [Description("很少(600)")]
@@ -72,6 +80,10 @@ namespace Ventulus
         private static WeightDictionary NPCTypeAdjustment;
         private static int PopulationAdjustment;
 
+        //魏老播报，占用传音符id100000
+        private static int CyFuId = 100000;
+        private static int CyNPCId = 2;
+
         [HarmonyPatch(typeof(NpcJieSuanManager))]
         class NpcJieSuanManager_Patch
         {
@@ -86,20 +98,62 @@ namespace Ventulus
             }
         }
 
+        public void AddCy100000(MessageData data = null)
+        {
+
+            Logger.LogInfo("增加100000号传音符");
+            JSONObject js100000 = new JSONObject(Cy100000);
+            Logger.LogInfo(js100000.ToString());
+            jsonData.instance.ChuanYingFuBiao.SetField(CyFuId.ToString(), js100000);
+        }
         public void AfterJieSuanStatistics(MessageData data = null)
         {
 
             Logger.LogInfo("结算完成");
             Logger.LogInfo(NpcJieSuanManager.inst.JieSuanTime);
+            AddCyNPC();
             //每次结算统计
-            StatisticsPopulation();
+            //StatisticsPopulation();
 
             //每年六月
             //return;
             StartCoroutine(AdjustPopulation());
 
-        }
 
+        }
+        public void AddCyNPC()
+        {
+            KBEngine.Avatar Player = Tools.instance.getPlayer();
+            if (StatisticsBroadcast.Value && !Player.emailDateMag.cyNpcList.Contains(CyNPCId))
+            {
+                Logger.LogInfo("传音主持人");
+                Player.emailDateMag.cyNpcList.Add(CyNPCId);
+                //魏老特殊
+                if (NPCEx.NPCIDToNew(CyNPCId) < 20000)
+                {
+                    JSONObject npcjson = jsonData.instance.AvatarJsonData[CyNPCId.ToString()];
+                    npcjson.SetField("ActionId", 1);
+                }
+                //ChuanYingManager.ReadData竟然是Private，还是手动给他加吧
+                JSONObject emailjson = jsonData.instance.ChuanYingFuBiao[CyFuId.ToString()];
+                DateTime dateTime = Player.worldTimeMag.getNowTime();
+                emailjson.SetField("sendTime", dateTime.ToString());
+                emailjson.SetField("CanCaoZuo", false);
+                emailjson.SetField("AvatarName", jsonData.instance.AvatarJsonData[CyNPCId.ToString()]["Name"].Str);
+                Logger.LogMessage(emailjson.ToString());
+                Player.NewChuanYingList.SetField(CyFuId.ToString(), emailjson);
+
+                //加入新传音符
+                EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, dateTime.ToString());
+                emailData.sceneName = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。或许会对你修行有所帮助。";
+                Player.emailDateMag.AddNewEmail(CyNPCId.ToString(), emailData);
+            }
+            else if (!StatisticsBroadcast.Value && Player.emailDateMag.cyNpcList.Contains(CyNPCId))
+            {
+                Logger.LogInfo("移除传音");
+                Player.emailDateMag.cyNpcList.Remove(CyNPCId);
+            }
+        }
         public static DateTime RecentJune(DateTime lasttime, int month = 6)
         {
             DateTime temptime = new DateTime(lasttime.Year, month, lasttime.Day);
@@ -111,15 +165,16 @@ namespace Ventulus
 
         IEnumerator AdjustPopulation()
         {
+            //补充进入结算状态，防止快速存档影响
+            NpcJieSuanManager.inst.isCanJieSuan = false;
+
             DateTime tempdate = LastJieSuanTime;
             DateTime NowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
             while (NowJieSuanTime > RecentJune(tempdate, 6))
             {
-
                 Logger.LogMessage("经过六月份");
                 Logger.LogMessage(RecentJune(tempdate).ToString());
-                ///
-                yield return null;
+
                 //调查人口
                 StatisticsPopulation();
                 PopulationAdjustment = ((int)TargetPopulation.Value - TotalPopulation) / N + 1;
@@ -154,20 +209,50 @@ namespace Ventulus
                 ///
                 yield return null;
                 //开始循环造人
+                int createnum = 0;
                 for (int num = 1; num <= PopulationAdjustment; num++)
                 {
-                    int ChooseBigLevel = NPCBigLevelAdjustment.RollByWeight(out double roll);
-                    int ChooseType = NPCTypeAdjustment.RollByWeight(out double roll2);
+                    int ChooseBigLevel = NPCBigLevelAdjustment.RollByWeight(out _);
+                    int ChooseType = NPCTypeAdjustment.RollByWeight(out _);
+                    //Logger.LogInfo($"{ChooseBigLevel}{NPCBigLevel[ChooseBigLevel]}+{ChooseType}{NPCType[ChooseType]}");
                     if (ChooseBigLevel <= 0 || ChooseType <= 0) continue;
-                    Logger.LogInfo($"{ChooseBigLevel}{NPCBigLevel[ChooseBigLevel]}+{ChooseType}{NPCType[ChooseType]}");
+                    int banliupai = !AllowSpecialLiuPai.Value && TypeBanLiuPai.ContainsKey(ChooseType) ? TypeBanLiuPai[ChooseType] : 0;
+                    int id = CreateNpcByTypeAndLevel(ChooseType, BigLevelToLevel(ChooseBigLevel), banliupai);
 
-
+                    if (id >= 0)
+                    {
+                        createnum++;
+                        Logger.LogInfo($"{ChooseBigLevel}{NPCBigLevel[ChooseBigLevel]}+{ChooseType}{NPCType[ChooseType]} =ID:{id}");
+                    }
+                    else
+                    {
+                        Logger.LogInfo($"{ChooseBigLevel}{NPCBigLevel[ChooseBigLevel]}+{ChooseType}{NPCType[ChooseType]} =Fail");
+                    }
                     ///
-                    //yield return null;
+                    yield return null;
+                }
+                Logger.LogMessage("实际造人" + createnum);
+                if (StatisticsBroadcast.Value)
+                {
+                    Logger.LogInfo("传音符播报");
+                    KBEngine.Avatar Player = Tools.instance.getPlayer();
+                    DateTime dateTime = RecentJune(tempdate);
+                    string Broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}另外，还有刚开始修炼及隐居出世的修士{createnum}人。";
+                    //加入新传音符
+                    EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, dateTime.ToString());
+                    emailData.sceneName = Broadcast;
+                    Player.emailDateMag.AddNewEmail(CyNPCId.ToString(), emailData);
                 }
                 tempdate = tempdate.AddYears(1);
             }
-            Logger.LogMessage("人口调整完成");
+            ///
+            yield return null;
+            //退出结算状态
+            NpcJieSuanManager.inst.isCanJieSuan = true;
+
+            //播报人口统计
+            
+
         }
         public void StatisticsPopulation()
         {
@@ -205,6 +290,21 @@ namespace Ventulus
             Logger.LogInfo((int)TargetPopulation.Value);
 
         }
+        //官方bug，暂时帮忙修复下
+        [HarmonyPatch(typeof(KillSystem.Killer.Killer_Factory))]
+        class KillSystem_Killer_Killer_Factory_Patch
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch("GetRandomDaiHao")]
+            public static bool GetRandomDaiHao_Prefix(ref string __result)
+            {
+                int randomInt = Tools.instance.GetRandomInt(0, KillerDaiHaoData.DataDict.Count - 1);
+                //DataList的序号是0-24，DataDict的键是1-25
+                Instance.Logger.LogInfo("修复官方杀手bug");
+                __result = KillerDaiHaoData.DataList[randomInt].Name;
+                return false;
+            }
+        }
 
         public static int LevelToBigLevel(int level)
         {
@@ -213,6 +313,20 @@ namespace Ventulus
         public static int BigLevelToLevel(int biglevel)
         {
             return (biglevel - 1) * 3 + 1;
+        }
+
+        public int CreateNpcByTypeAndLevel(int type, int level, int banliupai = 0)
+        {
+            List<JSONObject> list = jsonData.instance.NPCLeiXingDate.list.Where(x => x["Type"].I == type && x["Level"].I == level && x["LiuPai"].I != banliupai).ToList();
+            if (list.Count() > 0)
+            {
+                NPCFactory npcFactory = FactoryManager.inst.npcFactory;
+                int j = npcFactory.getRandom(0, list.Count() - 1);
+
+                return npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false);
+            }
+            else
+                return 0;
         }
 
         private static Dictionary<int, string> NPCType = new Dictionary<int, string>()
@@ -286,6 +400,21 @@ namespace Ventulus
             {3,20},
             {4,5},
             {5,1},
+        };
+        private static Dictionary<int, int> TypeBanLiuPai = new Dictionary<int, int>()
+        {
+            //npc类型对应多种流派往往有一个重要NPC特有的流派
+            {1,4},
+            {2,14},
+            {4,34},
+            {6,62},
+            {7,72},
+            {8,82},
+            {9,92},
+            {16,164},
+            {21,211},
+            {23,232},
+            {24,241},
         };
     }
 
@@ -396,7 +525,7 @@ namespace Ventulus
             }
             return new Dictionary<int, double>(_sortDict);
         }
-        private System.Random rnd = new System.Random();
+        public System.Random random = new System.Random();
         public static long GetRandomLong()
         {
             byte[] array = new byte[8];
@@ -419,7 +548,7 @@ namespace Ventulus
             double result;
             do
             {
-                result = rnd.NextDouble();
+                result = random.NextDouble();
             } while (result >= max);
             return result;
         }

@@ -17,9 +17,8 @@ namespace Ventulus
         }
         void Start()
         {
+            new Harmony("Ventulus.MCS.TrueRandom").PatchAll();
             Logger.LogInfo("加载成功");
-            var harmony = new Harmony("Ventulus.MCS.TrueRandom");
-            harmony.PatchAll();
         }
         public static TrueRandom Instance;
         public static ConfigEntry<RandomMethod> StrongRandom;
