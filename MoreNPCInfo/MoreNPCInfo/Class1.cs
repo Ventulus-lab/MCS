@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using GUIPackage;
 using HarmonyLib;
 using JSONClass;
+//using KBEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -16,7 +17,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.8.0")]
+    [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.9.0")]
     public class MoreNPCInfo : BaseUnityPlugin
     {
         void Start()
@@ -203,24 +204,34 @@ namespace Ventulus
             {
                 tFightShuXing.GetChild(i).gameObject.SetActive(false);
             }
-            //上移
-            Transform tTitle2 = tFightShuXing.Find("Title");
-            v3 = tTitle2.localPosition;
-            v3.y = 135f;
-            tTitle2.localPosition = v3;
+
+
             //增加种族
-            Transform tZhongZu2 = MakeNewCiTiao("种族", tFightShuXing, 17, 8);
 
-            Transform tQiXue2 = MakeNewCiTiao("气血", tFightShuXing, 18, 3);
 
-            Transform tDunSu2 = MakeNewCiTiao("遁速", tFightShuXing, 19, 10);
+            Transform tQiXue2 = MakeNewCiTiao("气血", tFightShuXing, 3, 3);
 
-            Transform tShenShi2 = MakeNewCiTiao("神识", tFightShuXing, 20, 11);
+            Transform tDunSu2 = MakeNewCiTiao("遁速", tFightShuXing, 4, 10);
 
-            Transform tXiuWei2 = MakeNewCiTiao("修为", tFightShuXing, 21, 5);
+            Transform tShenShi2 = MakeNewCiTiao("神识", tFightShuXing, 5, 11);
+
+            Transform tZhongZu2 = MakeNewCiTiao("种族", tFightShuXing, 11, 8);
+
+            Transform tXingBie2 = MakeNewCiTiao("性别", tFightShuXing, 12, 4);
+
+            Transform tXiuWei2 = MakeNewCiTiao("修为", tFightShuXing, 13, 5);
 
             //增加灵根简易
-            Transform tZLingGen2 = MakeNewCiTiao("灵根", tFightShuXing, 22, 2);
+            Transform tZLingGen2 = MakeNewCiTiao("灵根", tFightShuXing, 7, 2);
+
+            yield return null;
+            //赠礼
+            UINPCZengLi NPCZengLi = UINPCJiaoHu.Inst.ZengLi;
+            NPCZengLi.gameObject.AddComponent<ZengliItem>();
+            Transform tZhuoZi = NPCZengLi.transform.Find("Right/ZhuoZi");
+            tZhuoZi.GetChild(2).localPosition = new Vector3(-60, -75, 0);
+            tZhuoZi.GetChild(3).localPosition = new Vector3(0, -75, 0);
+            tZhuoZi.GetChild(4).localPosition = new Vector3(0, -105, 0);
 
         }
         public static Transform MakeNewCiTiao(string name, Transform tShuXing, int pos = 1, int imageindex = 2)
@@ -260,6 +271,43 @@ namespace Ventulus
                 UToolTip.Close();
             }
             public string Desc;
+        }
+        public class ZengliItem : MonoBehaviour
+        {
+            void LateUpdate()
+            {
+                UIIconShow tempSlot = this.GetComponent<UINPCZengLi>().ZengLiSlot;
+                if (tempSlot != null && (tempSlot.tmpItem != item || tempSlot.Count != count))
+                {
+                    int AddHaoGan = 0;
+                    int itemQingFen = 0;
+
+                    item = tempSlot.tmpItem;
+                    count = tempSlot.Count;
+
+                    if (tempSlot.NowType != 0 && count > 0 && item != null)
+                    {
+                        KBEngine.Avatar player = PlayerEx.Player;
+                        npc = UINPCJiaoHu.Inst.NowJiaoHuNPC;
+                        int X = NPCEx.CalcZengLiX(npc);
+                        itemQingFen = NPCEx.CalcQingFen(npc, item, count, out var isLaJi, out var _, out var zengliJieGuo, out var _, out var _);
+                        int lastDuoYuQingFen = player.ZengLi.TryGetField("DuoYuQingFen").TryGetField(npc.ID.ToString()).I;
+                        if (int.MaxValue - lastDuoYuQingFen < itemQingFen)
+                        {
+                            lastDuoYuQingFen = int.MaxValue - itemQingFen;
+                        }
+                        int ZongQingFen = itemQingFen + lastDuoYuQingFen;
+                        AddHaoGan = ZongQingFen / X;
+                    }
+
+                    Transform tZhuoZi = this.transform.Find("Right/ZhuoZi");
+                    tZhuoZi.GetChild(3).GetComponent<Text>().text = "好感+" + AddHaoGan.ToString();
+                    tZhuoZi.GetChild(4).GetComponent<Text>().text = "情分+" + itemQingFen.ToString();
+                }
+            }
+            UINPCData npc;
+            item item;
+            int count = -1;
         }
 
         public List<GameObject> IconImage = new List<GameObject>();
@@ -563,6 +611,27 @@ namespace Ventulus
             {20,"普通受邀"},
             {21,"道侣受邀"},
         };
+        private static Dictionary<int, string> AvatarType = new Dictionary<int, string>()
+        {
+            {1,"人族"},
+            {2,"妖族"},
+            {3,"魔族"},
+            {4,"鬼族"},
+        };
+        private static Dictionary<int, string> AvatarSexTypeMale = new Dictionary<int, string>()
+        {
+            {1,"男"},
+            {2,"公"},
+            {3,"牡"},
+            {4,"雄"},
+        };
+        private static Dictionary<int, string> AvatarSexTypeFemale = new Dictionary<int, string>()
+        {
+            {1,"女"},
+            {2,"母"},
+            {3,"牝"},
+            {4,"雌"},
+        };
 
         private static string StringNum(long Num)
         {
@@ -690,8 +759,8 @@ namespace Ventulus
 
 
                 //种族+性别
-                tFightShuXing.Find("种族/Text").GetComponent<Text>().text = MakeZhongZuSexStr(npc);
-
+                tFightShuXing.Find("种族/Text").GetComponent<Text>().text = AvatarType.ContainsKey(npc.json["AvatarType"].I) ? AvatarType[npc.json["AvatarType"].I] : "未知";
+                tFightShuXing.Find("性别/Text").GetComponent<Text>().text = npc.json["SexType"].I == 1 ? AvatarSexTypeMale[npc.json["AvatarType"].I] : npc.json["SexType"].I == 2 ? AvatarSexTypeFemale[npc.json["AvatarType"].I] : "未知";
                 tFightShuXing.Find("气血/Text").GetComponent<Text>().text = npc.HP.ToString();
                 tFightShuXing.Find("遁速/Text").GetComponent<Text>().text = npc.DunSu.ToString();
                 tFightShuXing.Find("神识/Text").GetComponent<Text>().text = npc.ShenShi.ToString();
