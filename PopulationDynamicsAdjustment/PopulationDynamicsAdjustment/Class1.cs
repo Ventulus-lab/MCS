@@ -23,7 +23,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.0.0")]
+    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.0.1")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
         void Awake()
@@ -46,7 +46,7 @@ namespace Ventulus
         private static DateTime LastJieSuanTime;
         public static ConfigEntry<PopulationEnum> TargetPopulation;
         public static ConfigEntry<bool> AllowSpecialLiuPai;
-        private static string Cy100000 = @"{""id"":100000,""AvatarID"":2,""info"":""{DiDian}"",""Type"":3,""DelayTime"":[],""TaskID"":0,""TaskIndex"":[],""WeiTuo"":0,""ItemID"":0,""valueID"":[],""value"":[],""SPvalueID"":0,""StarTime"":"""",""EndTime"":"""",""Level"":[],""HaoGanDu"":0,""EventValue"":[],""fuhao"":"""",""IsOnly"":1,""IsAdd"":0,""IsDelete"":0,""NPCLevel"":[],""IsAlive"":0}";
+        private static readonly string Cy100000 = @"{""id"":100000,""AvatarID"":2,""info"":""{DiDian}"",""Type"":3,""DelayTime"":[],""TaskID"":0,""TaskIndex"":[],""WeiTuo"":0,""ItemID"":0,""valueID"":[],""value"":[],""SPvalueID"":0,""StarTime"":"""",""EndTime"":"""",""Level"":[],""HaoGanDu"":0,""EventValue"":[],""fuhao"":"""",""IsOnly"":1,""IsAdd"":0,""IsDelete"":0,""NPCLevel"":[],""IsAlive"":0}";
         public static ConfigEntry<bool> StatisticsBroadcast;
         public enum PopulationEnum
         {
@@ -120,8 +120,24 @@ namespace Ventulus
         public void AddCyNPC()
         {
             KBEngine.Avatar Player = Tools.instance.getPlayer();
+            DateTime dateTime = Player.worldTimeMag.getNowTime();
+            //ChuanYingManager.ReadData竟然是Private，还是手动给他加吧
+            if (!jsonData.instance.ChuanYingFuBiao.HasField(CyFuId.ToString()))
+            {
+                AddCy100000();
+            }
+            if (!Player.NewChuanYingList.HasField(CyFuId.ToString()))
+            {
+                JSONObject emailjson = jsonData.instance.ChuanYingFuBiao[CyFuId.ToString()];
+                emailjson.SetField("sendTime", dateTime.ToString());
+                emailjson.SetField("CanCaoZuo", false);
+                emailjson.SetField("AvatarName", jsonData.instance.AvatarJsonData[CyNPCId.ToString()]["Name"].Str);
+                Logger.LogMessage(emailjson.ToString());
+                Player.NewChuanYingList.SetField(CyFuId.ToString(), emailjson);
+            }
             if (StatisticsBroadcast.Value && !Player.emailDateMag.cyNpcList.Contains(CyNPCId))
             {
+
                 Logger.LogInfo("传音主持人");
                 Player.emailDateMag.cyNpcList.Add(CyNPCId);
                 //魏老特殊
@@ -130,21 +146,13 @@ namespace Ventulus
                     JSONObject npcjson = jsonData.instance.AvatarJsonData[CyNPCId.ToString()];
                     npcjson.SetField("ActionId", 1);
                 }
-                //ChuanYingManager.ReadData竟然是Private，还是手动给他加吧
-                JSONObject emailjson = jsonData.instance.ChuanYingFuBiao[CyFuId.ToString()];
-                DateTime dateTime = Player.worldTimeMag.getNowTime();
-                emailjson.SetField("sendTime", dateTime.ToString());
-                emailjson.SetField("CanCaoZuo", false);
-                emailjson.SetField("AvatarName", jsonData.instance.AvatarJsonData[CyNPCId.ToString()]["Name"].Str);
-                Logger.LogMessage(emailjson.ToString());
-                Player.NewChuanYingList.SetField(CyFuId.ToString(), emailjson);
-
                 //加入新传音符
                 EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, dateTime.ToString())
                 {
                     sceneName = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。或许会对你修行有所帮助。"
                 };
                 Player.emailDateMag.AddNewEmail(CyNPCId.ToString(), emailData);
+
             }
             else if (!StatisticsBroadcast.Value && Player.emailDateMag.cyNpcList.Contains(CyNPCId))
             {
@@ -164,7 +172,7 @@ namespace Ventulus
         IEnumerator AdjustPopulation()
         {
             //补充进入结算状态，防止快速存档影响
-            NpcJieSuanManager.inst.isCanJieSuan = false;
+            //NpcJieSuanManager.inst.isCanJieSuan = false;
 
             DateTime tempdate = LastJieSuanTime;
             DateTime NowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
@@ -245,6 +253,10 @@ namespace Ventulus
                     KBEngine.Avatar Player = Tools.instance.getPlayer();
                     DateTime dateTime = RecentJune(tempdate);
 
+                    //判断100000是否存在
+                    AddCyNPC();
+
+
                     //加入新传音符
                     EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, dateTime.ToString())
                     {
@@ -256,7 +268,7 @@ namespace Ventulus
             }
 
             //退出结算状态
-            NpcJieSuanManager.inst.isCanJieSuan = true;
+            //NpcJieSuanManager.inst.isCanJieSuan = true;
         }
         public void StatisticsPopulation()
         {
@@ -272,12 +284,18 @@ namespace Ventulus
                 if (id < 20000) continue;
 
                 TotalPopulation++;
+                if (avatar.HasField("Level"))
+                {
+                    int biglevel = LevelToBigLevel(avatar["Level"].I);
+                    NPCBigLevelStatistics.AddWeight(biglevel);
+                }
 
-                int biglevel = LevelToBigLevel(avatar["Level"].I);
-                NPCBigLevelStatistics.AddWeight(biglevel);
+                if (avatar.HasField("Type"))
+                {
+                    int npctype = avatar["Type"].I;
+                    NPCTypeStatistics.AddWeight(npctype);
+                }
 
-                int npctype = avatar["Type"].I;
-                NPCTypeStatistics.AddWeight(npctype);
             }
 
 

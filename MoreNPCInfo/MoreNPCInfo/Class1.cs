@@ -20,17 +20,20 @@ namespace Ventulus
     [BepInPlugin("Ventulus.MCS.MoreNPCInfo", "更多NPC信息", "1.9.0")]
     public class MoreNPCInfo : BaseUnityPlugin
     {
-        void Start()
+        void Awake()
         {
-            Logger.LogInfo("更多NPC信息加载成功！");
+            Instance = this;
             ShowStringNum = Config.Bind<bool>("Ventulus", "显示代表信息的数值", false, "显示代表信息的数值，默认关闭");
             ShowPianHaoInfo = Config.Bind<bool>("Ventulus", "显示偏好信息", true, "显示偏好信息，默认开启");
             ShowWuDaoInfo = Config.Bind<bool>("Ventulus", "显示更多悟道信息", true, "显示更多悟道信息，默认开启");
             ShowNaiYaoInfo = Config.Bind<bool>("Ventulus", "显示耐药信息", true, "显示耐药信息，默认开启");
-            var harmony = new Harmony("Ventulus.MCS.MoreNPCInfo");
-            harmony.PatchAll();
+        }
+        void Start()
+        {
+            new Harmony("Ventulus.MCS.MoreNPCInfo").PatchAll();
 
             MessageMag.Instance.Register(MessageName.MSG_GameInitFinish, new Action<MessageData>(this.Init));
+            Logger.LogInfo("加载成功！");
         }
 
         public static MoreNPCInfo Instance;
@@ -41,10 +44,7 @@ namespace Ventulus
         public static ConfigEntry<bool> ShowWuDaoInfo;
         public static ConfigEntry<bool> ShowNaiYaoInfo;
         private static Vector3 v3;
-        void Awake()
-        {
-            Instance = this;
-        }
+
 
         void Init(MessageData data = null)
         {
@@ -207,7 +207,6 @@ namespace Ventulus
 
 
             //增加种族
-
 
             Transform tQiXue2 = MakeNewCiTiao("气血", tFightShuXing, 3, 3);
 
