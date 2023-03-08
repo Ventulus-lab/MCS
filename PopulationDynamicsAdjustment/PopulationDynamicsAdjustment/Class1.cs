@@ -23,7 +23,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.0.1")]
+    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.0.2")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
         void Awake()
@@ -63,7 +63,7 @@ namespace Ventulus
 
         }
         //每年补充人数比例，数字越高补充越慢
-        private const int N = 4;
+        private const int N = 5;
 
         private static int TotalPopulation;
         private static WeightDictionary NPCBigLevelStatistics;
@@ -108,11 +108,10 @@ namespace Ventulus
             Logger.LogInfo(NpcJieSuanManager.inst.JieSuanTime);
 
             //每次结算
-            AddCyNPC();
+
             //StatisticsPopulation();
 
-            //每年六月
-            //return;
+
             StartCoroutine(AdjustPopulation());
 
 
@@ -120,7 +119,6 @@ namespace Ventulus
         public void AddCyNPC()
         {
             KBEngine.Avatar Player = Tools.instance.getPlayer();
-            DateTime dateTime = Player.worldTimeMag.getNowTime();
             //ChuanYingManager.ReadData竟然是Private，还是手动给他加吧
             if (!jsonData.instance.ChuanYingFuBiao.HasField(CyFuId.ToString()))
             {
@@ -129,7 +127,7 @@ namespace Ventulus
             if (!Player.NewChuanYingList.HasField(CyFuId.ToString()))
             {
                 JSONObject emailjson = jsonData.instance.ChuanYingFuBiao[CyFuId.ToString()];
-                emailjson.SetField("sendTime", dateTime.ToString());
+                emailjson.SetField("sendTime", LastJieSuanTime.ToString());
                 emailjson.SetField("CanCaoZuo", false);
                 emailjson.SetField("AvatarName", jsonData.instance.AvatarJsonData[CyNPCId.ToString()]["Name"].Str);
                 Logger.LogMessage(emailjson.ToString());
@@ -147,7 +145,7 @@ namespace Ventulus
                     npcjson.SetField("ActionId", 1);
                 }
                 //加入新传音符
-                EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, dateTime.ToString())
+                EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, LastJieSuanTime.ToString())
                 {
                     sceneName = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。或许会对你修行有所帮助。"
                 };
@@ -173,18 +171,23 @@ namespace Ventulus
         {
             //补充进入结算状态，防止快速存档影响
             //NpcJieSuanManager.inst.isCanJieSuan = false;
-
+            //等待一秒
+            yield return new WaitForSeconds(1f);
+            AddCyNPC();
             DateTime tempdate = LastJieSuanTime;
             DateTime NowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
             while (NowJieSuanTime > RecentJune(tempdate, 6))
             {
+                DateTime cycledateTime = RecentJune(tempdate);
                 Logger.LogMessage("经过六月份");
-                Logger.LogMessage(RecentJune(tempdate).ToString());
+                Logger.LogMessage(cycledateTime.ToString());
 
                 //调查人口
                 StatisticsPopulation();
                 string Broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}";
                 PopulationAdjustment = ((int)TargetPopulation.Value - TotalPopulation) / N;
+                if (PopulationAdjustment > (int)TargetPopulation.Value / 10)
+                    PopulationAdjustment = (int)TargetPopulation.Value / 10;
                 if (PopulationAdjustment <= 0)
                 {
                     PopulationAdjustment = 0;
@@ -192,10 +195,23 @@ namespace Ventulus
                 }
                 else
                 {
+
                     ///
                     yield return null;
                     //计算比例
-                    NPCBigLevelTarget = new WeightDictionary(TargetBigLevelWeight, NPCBigLevel);
+                    if (cycledateTime >= new DateTime(300, 1, 1))
+                    {
+                        NPCBigLevelTarget = new WeightDictionary(TargetBigLevelWeight300, NPCBigLevel);
+                    }
+                    else if (cycledateTime >= new DateTime(120, 1, 1))
+                    {
+                        NPCBigLevelTarget = new WeightDictionary(TargetBigLevelWeight120, NPCBigLevel);
+                    }
+                    else
+                    {
+                        NPCBigLevelTarget = new WeightDictionary(TargetBigLevelWeight, NPCBigLevel);
+                    }
+
                     NPCTypeTarget = new WeightDictionary(TargetTypeWeight, NPCType);
 
                     Dictionary<int, double> subdict = NPCBigLevelTarget.PositiveSubtraction(NPCBigLevelStatistics.WeightDict);
@@ -251,14 +267,14 @@ namespace Ventulus
                 {
                     Logger.LogInfo("传音符播报");
                     KBEngine.Avatar Player = Tools.instance.getPlayer();
-                    DateTime dateTime = RecentJune(tempdate);
+
 
                     //判断100000是否存在
                     AddCyNPC();
 
 
                     //加入新传音符
-                    EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, dateTime.ToString())
+                    EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, cycledateTime.ToString())
                     {
                         sceneName = Broadcast
                     };
@@ -400,8 +416,8 @@ namespace Ventulus
             {18,10},
             {19,10},
             {20,10},
-            {21,10},
-            {22,10},
+            {21,5},
+            {22,5},
             {23,20},
             {24,0},
             {25,10},
@@ -415,6 +431,22 @@ namespace Ventulus
             {5,"化神"},
         };
         private static Dictionary<int, double> TargetBigLevelWeight = new Dictionary<int, double>()
+        {
+            {1,240},
+            {2,90},
+            {3,24},
+            {4,5},
+            {5,1},
+        };
+        private static Dictionary<int, double> TargetBigLevelWeight120 = new Dictionary<int, double>()
+        {
+            {1,180},
+            {2,75},
+            {3,22},
+            {4,5},
+            {5,1},
+        };
+        private static Dictionary<int, double> TargetBigLevelWeight300 = new Dictionary<int, double>()
         {
             {1,120},
             {2,60},
