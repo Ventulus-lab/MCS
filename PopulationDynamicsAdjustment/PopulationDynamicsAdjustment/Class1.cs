@@ -185,9 +185,7 @@ namespace Ventulus
                 //调查人口
                 StatisticsPopulation();
                 string Broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}";
-                PopulationAdjustment = ((int)TargetPopulation.Value - TotalPopulation) / N;
-                if (PopulationAdjustment > (int)TargetPopulation.Value / 10)
-                    PopulationAdjustment = (int)TargetPopulation.Value / 10;
+                PopulationAdjustment = Math.Min(((int)TargetPopulation.Value - TotalPopulation) / N, (int)TargetPopulation.Value / 10);
                 if (PopulationAdjustment <= 0)
                 {
                     PopulationAdjustment = 0;

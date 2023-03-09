@@ -768,6 +768,11 @@ namespace Ventulus
                 //灵根
                 tFightShuXing.Find("灵根/Text").GetComponent<Text>().text = MakeLingGenStr(npc);
 
+                if (jsonData.instance.AvatarBackpackJsonData.HasField(npc.ID.ToString()))
+                {
+                    Instance.Logger.LogInfo(jsonData.instance.AvatarBackpackJsonData[npc.ID.ToString()].ToString().ToCN());
+                }
+                
                 return true;
             }
         }
