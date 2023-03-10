@@ -497,22 +497,18 @@ namespace Ventulus
         };
         private static Dictionary<int, string> NPCXingGe = new Dictionary<int, string>()
         {
-            {1,"善良"},
-            {2,"稳重"},
-            {3,"洒脱"},
-            {4,"活泼"},
-            {5,"傲慢"},
-            {6,"温柔"},
-            {7,"孤僻"},
-            {8,"暴躁"},
-            {11,"阴险"},
-            {12,"稳重"},
-            {13,"洒脱"},
-            {14,"傲慢"},
-            {15,"贪婪"},
-            {16,"唯我"},
-            {17,"孤僻"},
-            {18,"暴躁"},
+            {1,"寿元已尽"},
+            {2,"被玩家打死"},
+            {3,"游历时意外身亡"},
+            {4,"被妖兽反杀"},
+            {5,"被其它NPC截杀"},
+            {6,"做宗门任务死了"},
+            {7,"做主城任务死了"},
+            {8,"炼丹被炸死"},
+            {9,"炼器被炸死"},
+            {10,"不明原因死亡"},
+            {11,"截杀时被反杀"},
+            {12,"飞升失败"},
         };
         private static Dictionary<int, string> NPCTag = new Dictionary<int, string>()
         {
@@ -768,10 +764,10 @@ namespace Ventulus
                 //灵根
                 tFightShuXing.Find("灵根/Text").GetComponent<Text>().text = MakeLingGenStr(npc);
 
-                if (jsonData.instance.AvatarBackpackJsonData.HasField(npc.ID.ToString()))
-                {
-                    Instance.Logger.LogInfo(jsonData.instance.AvatarBackpackJsonData[npc.ID.ToString()].ToString().ToCN());
-                }
+                //if (jsonData.instance.AvatarBackpackJsonData.HasField(npc.ID.ToString()))
+                //{
+                //    Instance.Logger.LogInfo(jsonData.instance.AvatarBackpackJsonData[npc.ID.ToString()].ToString().ToCN());
+                //}
                 
                 return true;
             }
