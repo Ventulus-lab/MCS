@@ -2,7 +2,7 @@
 using BepInEx.Configuration;
 using Fungus;
 using HarmonyLib;
-using KBEngine;
+//using KBEngine;
 using PaiMai;
 using System;
 using System.Collections.Generic;
@@ -14,19 +14,23 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.BigTuPoSpendTime", "大境界突破花费时间", "1.1")]
+    [BepInPlugin("Ventulus.MCS.BigTuPoSpendTime", "大境界突破花费时间", "1.1.1")]
     public class BigTuPoSpendTime : BaseUnityPlugin
     {
+        void Awake()
+        {
+            Instance = this;
+            ZhuJiHuiHeDays = Config.Bind<int>("Ventulus", "筑基每回合天数", 1, "默认1天");
+            JieDanHuiHeDays = Config.Bind<int>("Ventulus", "结丹每回合天数", 3, "默认3天");
+            JieYingHuiHeDays = Config.Bind<int>("Ventulus", "结婴每回合天数", 5, "默认5天");
+            HuaShenHuiHeDays = Config.Bind<int>("Ventulus", "化神每回合天数", 7, "默认7天");
+            DuJieHuiHeDays = Config.Bind<int>("Ventulus", "渡劫每回合天数", 9, "默认9天");
+        }
         void Start()
         {
-            Logger.LogInfo("大境界突破花费时间加载成功！");
-            ZhuJiHuiHeDays = Config.Bind<int>("config", "筑基每回合天数", 1, "默认1天");
-            JieDanHuiHeDays = Config.Bind<int>("config", "结丹每回合天数", 3, "默认3天");
-            JieYingHuiHeDays = Config.Bind<int>("config", "结婴每回合天数", 5, "默认5天");
-            HuaShenHuiHeDays = Config.Bind<int>("config", "化神每回合天数", 7, "默认7天");
-            DuJieHuiHeDays = Config.Bind<int>("config", "渡劫每回合天数", 9, "默认9天");
-            var harmony = new Harmony("Ventulus.MCS.BigTuPoSpendTime");
-            harmony.PatchAll();
+
+            new Harmony("Ventulus.MCS.BigTuPoSpendTime").PatchAll();
+            Logger.LogInfo("加载成功！");
         }
 
         public static BigTuPoSpendTime Instance;
@@ -35,10 +39,7 @@ namespace Ventulus
         public static ConfigEntry<int> JieYingHuiHeDays;
         public static ConfigEntry<int> HuaShenHuiHeDays;
         public static ConfigEntry<int> DuJieHuiHeDays;
-        void Awake()
-        {
-            Instance = this;
-        }
+        
 
 
         [HarmonyPatch(typeof(RoundManager))]
@@ -46,11 +47,11 @@ namespace Ventulus
         {
             [HarmonyPostfix]
             [HarmonyPatch(nameof(RoundManager.endRound))]
-            public static void endRound_Postfix(Entity _avater)
+            public static void endRound_Postfix(KBEngine.Entity _avater)
             {
                 Instance.Logger.LogInfo("大境界突破花费时间修改每回合");
                 //Instance.Logger.LogInfo(Tools.instance.monstarMag.FightType);
-                Avatar avatar = (Avatar)_avater;
+                KBEngine.Avatar avatar = (KBEngine.Avatar)_avater;
                 if (Tools.instance.monstarMag.FightType == StartFight.FightEnumType.ZhuJi && avatar.isPlayer())
                 {
                     avatar.AddTime(ZhuJiHuiHeDays.Value, 0, 0);
@@ -89,7 +90,7 @@ namespace Ventulus
             public static void JieSuan_Postfix()
             {
                 Instance.Logger.LogInfo("大境界突破花费时间修改金丹提前完成");
-                Avatar player = Tools.instance.getPlayer();
+                KBEngine.Avatar player = Tools.instance.getPlayer();
                 //buff4010表示剩余回合，若结算时还有表示结丹提前完成
                 if (player.buffmag.HasBuff(4010))
                 {
@@ -107,7 +108,7 @@ namespace Ventulus
             public static void JieYinSuccess_Postfix()
             {
                 Instance.Logger.LogInfo("大境界突破花费时间修改结婴成功");
-                Avatar player = Tools.instance.getPlayer();
+                KBEngine.Avatar player = Tools.instance.getPlayer();
 
                 player.AddTime(JieYingHuiHeDays.Value, 0, 0);
                 Instance.Logger.LogInfo(player.worldTimeMag.nowTime);
@@ -118,7 +119,7 @@ namespace Ventulus
             public static void JieYinFail_Postfix()
             {
                 Instance.Logger.LogInfo("大境界突破花费时间修改结婴失败");
-                Avatar player = Tools.instance.getPlayer();
+                KBEngine.Avatar player = Tools.instance.getPlayer();
 
                 player.AddTime(JieYingHuiHeDays.Value, 0, 0);
                 Instance.Logger.LogInfo(player.worldTimeMag.nowTime);
@@ -129,7 +130,7 @@ namespace Ventulus
             public static void JieYingYiZhiFail_Postfix()
             {
                 Instance.Logger.LogInfo("大境界突破花费时间修改结婴意志失败");
-                Avatar player = Tools.instance.getPlayer();
+                KBEngine.Avatar player = Tools.instance.getPlayer();
 
                 player.AddTime(JieYingHuiHeDays.Value, 0, 0);
                 Instance.Logger.LogInfo(player.worldTimeMag.nowTime);

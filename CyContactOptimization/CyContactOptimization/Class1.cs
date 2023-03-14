@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Contexts;
+using System.Security.Policy;
 using System.Text;
 using System.Xml.Linq;
 using UnityEngine;
@@ -20,7 +21,8 @@ using YSGame;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.7.0")]
+    [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.8.0")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Awake()
@@ -34,37 +36,7 @@ namespace Ventulus
         }
         public static CyContactOptimization Instance;
         private int CyOpenInfoPanel;
-        private static readonly string Cy100000 = @"{""id"":100000,""AvatarID"":2,""info"":""{DiDian}"",""Type"":3,""DelayTime"":[],""TaskID"":0,""TaskIndex"":[],""WeiTuo"":0,""ItemID"":0,""valueID"":[],""value"":[],""SPvalueID"":0,""StarTime"":"""",""EndTime"":"""",""Level"":[],""HaoGanDu"":0,""EventValue"":[],""fuhao"":"""",""IsOnly"":1,""IsAdd"":0,""IsDelete"":0,""NPCLevel"":[],""IsAlive"":0}";
-        //魏老播报，占用传音符id100000
-        private static int CyFuId = 100000;
-        private static int CyNPCId = 2;
-        public void AddCy100000(MessageData data = null)
-        {
 
-            Logger.LogInfo("增加100000号传音符");
-            JSONObject js100000 = new JSONObject(Cy100000);
-            Logger.LogInfo(js100000.ToString());
-            jsonData.instance.ChuanYingFuBiao.SetField(CyFuId.ToString(), js100000);
-        }
-        public void AddCyWuZuo()
-        {
-            KBEngine.Avatar player = Tools.instance.getPlayer();
-            //ChuanYingManager.ReadData竟然是Private，还是手动给他加吧
-            if (!jsonData.instance.ChuanYingFuBiao.HasField(CyFuId.ToString()))
-            {
-                AddCy100000();
-            }
-            if (!player.NewChuanYingList.HasField(CyFuId.ToString()))
-            {
-                JSONObject emailjson = jsonData.instance.ChuanYingFuBiao[CyFuId.ToString()];
-                emailjson.SetField("sendTime", player.worldTimeMag.nowTime);
-                emailjson.SetField("CanCaoZuo", false);
-                emailjson.SetField("AvatarName", jsonData.instance.AvatarJsonData[CyNPCId.ToString()]["Name"].Str);
-                Logger.LogMessage(emailjson.ToString());
-                player.NewChuanYingList.SetField(CyFuId.ToString(), emailjson);
-            }
-
-        }
         private static Dictionary<int, string> NPCdeathType = new Dictionary<int, string>()
         {
             {1,"寿元已尽"},
@@ -80,32 +52,6 @@ namespace Ventulus
             {11,"截杀时被反杀"},
             {12,"飞升失败"},
         };
-        public class PointerItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
-        {
-            public void OnPointerEnter(PointerEventData eventData)
-            {
-                if (!string.IsNullOrWhiteSpace(Desc))
-                {
-                    UToolTip.Show(Desc, 330f);
-                }
-            }
-            public void OnPointerExit(PointerEventData eventData)
-            {
-                UToolTip.Close();
-            }
-            public string Desc;
-        }
-        public static string GetNPCName(int npcId)
-        {
-            if (jsonData.instance.AvatarRandomJsonData.HasField(npcId.ToString()))
-                return jsonData.instance.AvatarRandomJsonData[npcId.ToString()]["Name"].str.ToCN();
-            else if (NpcJieSuanManager.inst.npcDeath.npcDeathJson.HasField(npcId.ToString()))
-                return NpcJieSuanManager.inst.npcDeath.npcDeathJson[npcId.ToString()]["deathName"].str.ToCN();
-            else if (jsonData.instance.AvatarJsonData.HasField(npcId.ToString()))
-                return jsonData.instance.AvatarJsonData[npcId.ToString()]["Name"].str.ToCN();
-            else
-                return "未知";
-        }
 
         [HarmonyPatch(typeof(CyFriendCell))]
         class CyFriendCell_Patch
@@ -149,7 +95,7 @@ namespace Ventulus
 
                 //增加删除标签
                 GameObject goShanChu = MakeNewBiaoQian("删除");
-                goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId, tName.GetComponent<Text>().text); });
+                goShanChu.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickShanChu(npcId); });
 
 
                 //增加查看标签
@@ -165,7 +111,7 @@ namespace Ventulus
 
                 //增加死因标签
                 GameObject goSiYin = MakeNewBiaoQian("死因");
-                goSiYin.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickSiYin(npcId); CyUIMag.inst.cyEmail.Restart(); CyUIMag.inst.cyEmail.Init(npcId); __instance.Click(); });
+                goSiYin.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickSiYin(npcId); CyUIMag.inst.cyEmail.Init(npcId); __instance.Click(); });
 
                 //排序
                 //由于新邮件人是先初始化cell再放红点，所以这里不合适排序
@@ -178,11 +124,25 @@ namespace Ventulus
                 {
                     JSONObject npcDeath = NpcJieSuanManager.inst.npcDeath.npcDeathJson[npcId.ToString()];
                     Instance.Logger.LogInfo(npcDeath.ToString());
- 
-
-                    //PI.Desc = DeathDesc;
-                    Instance.AddCyWuZuo();
                 }
+
+                //红点放大
+                bool BigRedDian = false;
+                Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
+                if (newEmailDictionary.Count > 0 && newEmailDictionary.ContainsKey(npcId.ToString()))
+                {
+                    List<EmailData> emails = newEmailDictionary[npcId.ToString()];
+                    foreach (EmailData emailData in emails)
+                    {
+                        if (emailData.isOld && npcId != 912 || emailData.actionId == 2)
+                        {
+                            BigRedDian = true;
+                            break;
+                        }
+                    }
+                }
+                __instance.redDian.transform.localScale = BigRedDian ? new Vector3(2, 2, 2) : new Vector3(1, 1, 1);
+
             }
             static void ArrangeLabelPositions(Transform parent)
             {
@@ -204,7 +164,7 @@ namespace Ventulus
             {
                 if (NpcJieSuanManager.inst.IsDeath(npcId) || NpcJieSuanManager.inst.IsFly(npcId))
                     return null;
-
+                //Instance.Logger.LogMessage(jsonData.instance.CyNpcDuiBaiData["1"].ToString().ToCN());
                 int id = NPCEx.NPCIDToNew(npcId);
                 Instance.Logger.LogInfo("查看按钮被点击了" + MakeNPCIDStr(npcId));
                 UINPCData npc = new UINPCData(id);
@@ -235,11 +195,11 @@ namespace Ventulus
                 return null;
             }
 
-            static UnityAction ClickShanChu(int npcId, string name)
+            static UnityAction ClickShanChu(int npcId)
             {
                 Instance.Logger.LogInfo("删除按钮被点击了" + MakeNPCIDStr(npcId));
                 //由于可能会是死人，在jsonData.instance.AvatarRandomJsonData里没有信息，所以得把name传进来
-                name = GetNPCName(npcId);
+                string name = VTools.GetNPCName(npcId);
 
 
                 USelectBox.Show($"确认要删除联系人{name}吗？ ", delegate
@@ -251,14 +211,16 @@ namespace Ventulus
             }
             static UnityAction ClickSiYin(int npcId)
             {
+
                 Instance.Logger.LogInfo("死因按钮被点击了" + MakeNPCIDStr(npcId));
                 JSONObject npcDeath = NpcJieSuanManager.inst.npcDeath.npcDeathJson[npcId.ToString()];
                 string DeathDesc = "唉…斯人已逝，幽思长存。且待我推算一番……";
-                DeathDesc += $"{Environment.NewLine}死者姓名：{GetNPCName(npcId)}";
+                DeathDesc += $"{Environment.NewLine}死者姓名：{VTools.GetNPCName(npcId)}";
                 if (npcDeath.HasField("deathTime"))
                 {
-                    DateTime deathTime = DateTime.Parse(npcDeath.GetField("deathTime").str);
-                    DeathDesc += $"{Environment.NewLine}死亡记录时间：{deathTime.Year}年{deathTime.Month}月{deathTime.Day}日";
+                    //死亡记录时间为下次月结时间，月结时间正常为下个月1号
+                    DateTime deathTime = DateTime.Parse(npcDeath.GetField("deathTime").str).AddMonths(-1);
+                    DeathDesc += $"{Environment.NewLine}死亡时间：{deathTime.Year}年{deathTime.Month}月";
                 }
                 if (npcDeath.HasField("deathType"))
                 {
@@ -268,20 +230,17 @@ namespace Ventulus
                 if (npcDeath.HasField("killNpcId"))
                 {
                     int killNpcId = npcDeath.GetInt("killNpcId");
-                    string killNpcName;
-                    if (killNpcId > 0)
-                        killNpcName = GetNPCName(killNpcId);
-                    else
-                        killNpcName = Tools.GetPlayerName();
+                    string killNpcName = VTools.GetNPCName(killNpcId);
                     DeathDesc += $"{Environment.NewLine}凶手：{killNpcName}";
                 }
-                KBEngine.Avatar player = Tools.instance.getPlayer();
-                //加入新传音符
-                EmailData emailData = new EmailData(npcId, isOld: true, CyFuId, player.worldTimeMag.nowTime)
-                {
-                    sceneName = DeathDesc
-                };
-                player.emailDateMag.AddNewEmail(npcId.ToString(), emailData);
+                //KBEngine.Avatar player = Tools.instance.getPlayer();
+                ////加入新传音符
+                //EmailData emailData = new EmailData(npcId, isOld: true, CyFuId, player.worldTimeMag.nowTime)
+                //{
+                //    sceneName = DeathDesc
+                //};
+                //player.emailDateMag.AddNewEmail(npcId.ToString(), emailData);
+                VTools.SendOldEmail(npcId, 2, DeathDesc);
                 return null;
             }
 
@@ -291,7 +250,6 @@ namespace Ventulus
 
                 Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
                 Dictionary<string, List<EmailData>> hasReadEmailDictionary = PlayerEx.Player.emailDateMag.hasReadEmailDictionary;
-                List<int> oldIdlist = new List<int>();
 
                 if (newEmailDictionary.Count > 0 && newEmailDictionary.ContainsKey(npcId.ToString()))
                 {
@@ -502,6 +460,7 @@ namespace Ventulus
             public static void InitNpcList_Prefix(CyNpcList __instance)
             {
                 __instance.friendList.Sort(new friendListComparer());
+
             }
         }
         //联系人比较器，返回负数为较小在前，正数为较大在后

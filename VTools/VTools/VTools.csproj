@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{11A83DB4-9730-41E2-A684-C416E6F856E1}</ProjectGuid>
+    <ProjectGuid>{16CE4038-F92C-4CD8-935D-E93A950BC718}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CyContactOptimization</RootNamespace>
-    <AssemblyName>CyContactOptimization</AssemblyName>
+    <RootNamespace>VTools</RootNamespace>
+    <AssemblyName>VTools</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -99,13 +99,9 @@
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="VTools">
-      <HintPath>D:\Steam\steamapps\common\觅长生\本地Mod测试\微风的工具库\plugins\VTools.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="VTools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

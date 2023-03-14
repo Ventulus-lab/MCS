@@ -12,37 +12,37 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    //插件描述特性 分别为 插件ID 插件名字 插件版本(必须为数字)
-    [BepInPlugin("Ventulus.MCS.BetterLundaoPlus", "BetterLundaoPlus", "1.0")]
-    public class BetterLundaoPlus : BaseUnityPlugin //继承BaseUnityPlugin
+
+    [BepInPlugin("Ventulus.MCS.BetterLundaoPlus", "更好的论道Plus", "1.2")]
+    public class BetterLundaoPlus : BaseUnityPlugin
     {
-        //Unity的Start生命周期
+        void Awake()
+        {
+            Instance = this;
+            LimitTopicsNum = Config.Bind<bool>("Ventulus", "限制玩家选题数量", true, "按照境界限制玩家选题数量，默认为true");
+            LundaoSpendTime = Config.Bind<bool>("Ventulus", "每回合花费1天时间", true, "论道每回合花费1天时间，默认为true");
+            InstWudaoExp = Config.Bind<int>("Ventulus", "获得悟道经验时立即获取的比例%", 20, new ConfigDescription("默认20%，其余转化为思绪时间，设为0即为原版全转为思绪", new AcceptableValueRange<int>(0, 100)));
+        }
         void Start()
         {
-            //输出日志
-            Logger.LogInfo("更好的论道Plus加载成功！");
-            var harmony = new Harmony("Ventulus.MCS.BetterLundaoPlus");
-            harmony.PatchAll();
-            LimitTopicsNum = Config.Bind<bool>("config", "LimitTopicsNum", true, "按照境界限制玩家选题数量，默认为true，");
-            LundaoSpendTime = Config.Bind<bool>("config", "LundaoSpendTime", true, "论道每回合花费1天时间，默认为true，");
-            InstWudaoExp = Config.Bind<double>("config", "InstWudaoExp", 0.2, "获得悟道经验时立即获取的比例，默认0.2，其余转化为思绪时间");
+
+            new Harmony("Ventulus.MCS.BetterLundaoPlus").PatchAll();
+
+            Logger.LogInfo("加载成功！");
         }
 
         public static BetterLundaoPlus Instance;
         ConfigEntry<bool> LimitTopicsNum;
         ConfigEntry<bool> LundaoSpendTime;
-        ConfigEntry<double> InstWudaoExp;
-        void Awake()
-        {
-            Instance = this;
-        }
+        ConfigEntry<int> InstWudaoExp;
+
 
         [HarmonyPatch(typeof(LunDaoHuiHe))]
-        class LunDaoHuiHePatch
+        class LunDaoHuiHe_Patch
         {
             [HarmonyPostfix]
             [HarmonyPatch("Init")]
-            public static void InitPostfix(LunDaoHuiHe __instance)
+            public static void Init_Postfix(LunDaoHuiHe __instance)
             {
                 Instance.Logger.LogInfo("LunDaoHuiHeInit");
                 //论道初始化修改总回合数
@@ -67,7 +67,7 @@ namespace Ventulus
 
             [HarmonyPostfix]
             [HarmonyPatch("ReduceHuiHe")]
-            public static void ReduceHuiHePostfix(LunDaoHuiHe __instance)
+            public static void ReduceHuiHe_Postfix(LunDaoHuiHe __instance)
             {
                 Instance.Logger.LogInfo("LunDaoHuiHeReduceHuiHe");
                 //论道每回合修改剩余回合显示
@@ -88,11 +88,11 @@ namespace Ventulus
 
 
         [HarmonyPatch(typeof(SelectLunTi))]
-        class SelectLunTiPatch
+        class SelectLunTi_Patch
         {
             [HarmonyPostfix]
             [HarmonyPatch("AddLunTiToList")]
-            public static void AddLunTiToListPostfix(SelectLunTi __instance)
+            public static void AddLunTiToList_Postfix(SelectLunTi __instance)
             {
                 Instance.Logger.LogInfo("SelectLunTiAddLunTiToList");
                 //论道选题变动调用论道初始化
@@ -102,7 +102,7 @@ namespace Ventulus
 
             [HarmonyPostfix]
             [HarmonyPatch("RemoveLunTiByList")]
-            public static void RemoveLunTiByListPostfix(SelectLunTi __instance)
+            public static void RemoveLunTiByList_Postfix(SelectLunTi __instance)
             {
                 Instance.Logger.LogInfo("SelectLunTiRemoveLunTiByList");
                 //论道选题变动调用论道初始化
@@ -112,11 +112,11 @@ namespace Ventulus
         }
 
         [HarmonyPatch(typeof(LunTiCell))]
-        class LunTiCellPatch
+        class LunTiCell_Patch
         {
             [HarmonyPrefix]
             [HarmonyPatch("MouseUp")]
-            public static bool MouseUpPrefix(LunTiCell __instance)
+            public static bool MouseUp_Prefix(LunTiCell __instance)
             {
                 Instance.Logger.LogInfo("LunTiCellMouseUp");
                 if (Instance.LimitTopicsNum.Value == false)
@@ -148,11 +148,11 @@ namespace Ventulus
             public int lv;
         };
         [HarmonyPatch(typeof(LunDaoManager))]
-        class LunDaoManagerPatch
+        class LunDaoManager_Patch
         {
             [HarmonyPostfix]
             [HarmonyPatch("GetSuiJiLuntTi")]
-            public static void GetSuiJiLuntTiPostfix(ref List<int> __result)
+            public static void GetSuiJiLuntTi_Postfix(ref List<int> __result)
             {
                 Instance.Logger.LogInfo("LunDaoManagerGetSuiJiLuntTi");
                 //按照境界限制npc选题数量
@@ -223,7 +223,7 @@ namespace Ventulus
 
             [HarmonyPrefix]
             [HarmonyPatch("InitLunDao")]
-            public static bool InitLunDaoPrefix()
+            public static bool InitLunDao_Prefix()
             {
                 //用来强制论道为NPC随机选择
                 //Tools.instance.IsSuiJiLunTi=true;
@@ -232,7 +232,7 @@ namespace Ventulus
 
             [HarmonyPrefix]
             [HarmonyPatch("GameOver")]
-            public static bool GameOverPrefix()
+            public static bool GameOver_Prefix()
             {
                 int paytime = LunDaoManager.inst.playerController.lunDaoHuiHe.totalHui;
                 if (paytime >= LunDaoManager.inst.playerController.lunDaoHuiHe.curHui)
@@ -252,11 +252,11 @@ namespace Ventulus
         }
 
         [HarmonyPatch(typeof(WuDaoMag))]
-        class WuDaoMagAddLingGuangPatch
+        class WuDaoMag_Patch
         {
             [HarmonyPrefix]
             [HarmonyPatch("AddLingGuang")]
-            public static bool AddLingGuangPrefix(int type, ref int studyTime, int quality)
+            public static bool AddLingGuang_Prefix(int type, ref int studyTime, int quality)
             {
                 //Instance.Logger.LogInfo("加灵光感悟" + name + type + studyTime + guoqiTime + desc + quality + isLunDao);
                 Instance.Logger.LogInfo("WuDaoMagAddLingGuang");
@@ -264,15 +264,12 @@ namespace Ventulus
                 //获得几品灵感对应的经验倍率
                 JSONObject wuDaoExBeiLuJson = jsonData.instance.WuDaoExBeiLuJson;
                 int multi = wuDaoExBeiLuJson["1"]["lingguang" + quality.ToString()].I;
-                if (Instance.InstWudaoExp.Value > 1)
-                    Instance.InstWudaoExp.Value = 1;
-                if (Instance.InstWudaoExp.Value < 0)
-                    Instance.InstWudaoExp.Value = 0;
+
                 //经验分配
                 int exsum = studyTime * multi;
-                int exins = (int)Math.Floor(exsum * Instance.InstWudaoExp.Value);
+                int exins = (int)Math.Floor(exsum * (float)Instance.InstWudaoExp.Value / 100);
                 //int exstu = exsum - exins;
-                int stutime = (int)Math.Ceiling(studyTime * (1 - Instance.InstWudaoExp.Value));
+                int stutime = (int)Math.Ceiling(studyTime * (1 - (float)Instance.InstWudaoExp.Value / 100));
 
                 Tools.instance.getPlayer().wuDaoMag.addWuDaoEx(type, exins);
                 studyTime = stutime;
