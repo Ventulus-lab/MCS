@@ -23,7 +23,7 @@ using YSGame;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.0.0")]
+    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.0.1")]
     public class VTools : BaseUnityPlugin
     {
         void Awake()
@@ -57,7 +57,11 @@ namespace Ventulus
         {
             Instance.Logger.LogDebug(data);
         }
-        private static KBEngine.Avatar player => Tools.instance.getPlayer();
+        public static KBEngine.Avatar player => Tools.instance.getPlayer();
+
+        public static DateTime NowTime => player.worldTimeMag.getNowTime();
+        public static string nowTime => player.worldTimeMag.nowTime;
+
         //根据npcId获取姓名
         public static string GetNPCName(int npcId)
         {
@@ -100,7 +104,7 @@ namespace Ventulus
                 JSONObject emailjson = new JSONObject(CyFuOld);
                 emailjson.SetField("id", CyFuId.ToString());
                 emailjson.SetField("AvatarID", SenderNPCId.ToString());
-                emailjson.SetField("sendTime", player.worldTimeMag.nowTime);
+                emailjson.SetField("sendTime", nowTime);
                 emailjson.SetField("CanCaoZuo", false);
                 emailjson.SetField("AvatarName", GetNPCName(SenderNPCId));//关键就在于显示的名字不同
                 LogMessage(emailjson.ToString());
@@ -115,7 +119,7 @@ namespace Ventulus
             }
             if (string.IsNullOrEmpty(SendTime))
             {
-                SendTime = player.worldTimeMag.nowTime;
+                SendTime = nowTime;
             }
             EmailData emailData = new EmailData(ContactNPCId, isOld: true, CyFuId, SendTime)
             {
@@ -124,9 +128,9 @@ namespace Ventulus
             player.emailDateMag.AddNewEmail(ContactNPCId.ToString(), emailData);
         }
 
-        //发送任意信息NewEmail，发信人只能是联系人（因为发信人名字限制死了只能为邮件npcid），可携带物品及数量，actionId=1是发送物品给玩家，2是向玩家请求物品,只占用对白表100000号.
+        //发送任意信息NewEmail，发信人只能是联系人（因为发信人名字限制死了只能为邮件npcid），可携带物品及数量，只占用对白表100000号.actionId=1是发送物品给玩家，2是向玩家请求物品，这种情况下outtime为npc等待月份如果超时npc回答不同，且好感度固定只加1（加情分按物品价值）
         private static readonly string CyDuiBaiNew = @"{""id"":100000,""Type"":100000,""XingGe"":1,""dir1"":""{DiDian}"",""dir2"":""{DiDian}"",""dir3"":""{DiDian}""}";
-        public static void SendNewEmail(int NPCId, string Message, string SendTime = "", int actionId = 0, int itemId = 0, int itemNum = 0)
+        public static void SendNewEmail(int NPCId, string Message, string SendTime = "", int actionId = 0, int itemId = 0, int itemNum = 0, int outtime = 60)
         {
             int CyDuiBaiId = 100000;
             if (!jsonData.instance.CyNpcDuiBaiData.HasField(CyDuiBaiId.ToString()))
@@ -143,9 +147,9 @@ namespace Ventulus
             }
             if (string.IsNullOrEmpty(SendTime))
             {
-                SendTime = player.worldTimeMag.nowTime;
+                SendTime = nowTime;
             }
-            EmailData emailData = new EmailData(NPCId, isOut: false, isComplete: false, new List<int> { CyDuiBaiId, 1 }, actionId, new List<int> { itemId, itemNum }, 500000, 0, SendTime)
+            EmailData emailData = new EmailData(NPCId, isOut: false, isComplete: false, new List<int> { CyDuiBaiId, 1 }, actionId, new List<int> { itemId, itemNum }, outtime, 1, SendTime)
             {
                 sceneName = Message
             };

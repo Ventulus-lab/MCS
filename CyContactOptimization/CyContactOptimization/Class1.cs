@@ -4,6 +4,7 @@ using BepInEx.Configuration;
 using GUIPackage;
 using HarmonyLib;
 using JSONClass;
+//using KBEngine;
 using script.NpcAction;
 using System;
 using System.Collections;
@@ -22,7 +23,7 @@ using YSGame;
 namespace Ventulus
 {
     [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "1.8.0")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "2.0.0")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Awake()
@@ -36,6 +37,7 @@ namespace Ventulus
         }
         public static CyContactOptimization Instance;
         private int CyOpenInfoPanel;
+        private int CyOpenZengLi;
 
         private static Dictionary<int, string> NPCdeathType = new Dictionary<int, string>()
         {
@@ -113,6 +115,10 @@ namespace Ventulus
                 GameObject goSiYin = MakeNewBiaoQian("死因");
                 goSiYin.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickSiYin(npcId); CyUIMag.inst.cyEmail.Init(npcId); __instance.Click(); });
 
+                //增加飞剑标签
+                GameObject goFeiJian = MakeNewBiaoQian("飞剑");
+                goFeiJian.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickFeiJian(npcId); });
+
                 //排序
                 //由于新邮件人是先初始化cell再放红点，所以这里不合适排序
                 //SortNpcCells(__instance.transform.parent);
@@ -164,9 +170,9 @@ namespace Ventulus
             {
                 if (NpcJieSuanManager.inst.IsDeath(npcId) || NpcJieSuanManager.inst.IsFly(npcId))
                     return null;
-                //Instance.Logger.LogMessage(jsonData.instance.CyNpcDuiBaiData["1"].ToString().ToCN());
+
                 int id = NPCEx.NPCIDToNew(npcId);
-                Instance.Logger.LogInfo("查看按钮被点击了" + MakeNPCIDStr(npcId));
+                Instance.Logger.LogInfo("查看按钮被点击了" + VTools.MakeNPCIdStr(npcId));
                 UINPCData npc = new UINPCData(id);
                 if (id < 20000)
                 {
@@ -190,14 +196,38 @@ namespace Ventulus
                 }
 
                 Instance.CyOpenInfoPanel = npcId;
+                Instance.Logger.LogInfo(Instance.CyOpenInfoPanel);
+                return null;
+            }
+            static UnityAction ClickFeiJian(int npcId)
+            {
+                if (NpcJieSuanManager.inst.IsDeath(npcId) || NpcJieSuanManager.inst.IsFly(npcId))
+                    return null;
+                Instance.Logger.LogInfo("飞剑按钮被点击了" + VTools.MakeNPCIdStr(npcId));
+                int id = NPCEx.NPCIDToNew(npcId);
+                UINPCData npc = new UINPCData(id);
+                if (id < 20000)
+                {
+                    Instance.Logger.LogMessage("工具人NPC无法飞剑传书");
+                    return null;
+                }
+                else
+                {
+                    npc.RefreshData();
+                    npc.IsFight = false;
+                    UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
+                    CyUIMag.inst.Close();
+                    UINPCJiaoHu.Inst.ShowNPCZengLi();
+                }
 
-
+                Instance.CyOpenZengLi = npcId;
+                Instance.Logger.LogInfo(Instance.CyOpenZengLi);
                 return null;
             }
 
             static UnityAction ClickShanChu(int npcId)
             {
-                Instance.Logger.LogInfo("删除按钮被点击了" + MakeNPCIDStr(npcId));
+                Instance.Logger.LogInfo("删除按钮被点击了" + VTools.MakeNPCIdStr(npcId));
                 //由于可能会是死人，在jsonData.instance.AvatarRandomJsonData里没有信息，所以得把name传进来
                 string name = VTools.GetNPCName(npcId);
 
@@ -212,7 +242,7 @@ namespace Ventulus
             static UnityAction ClickSiYin(int npcId)
             {
 
-                Instance.Logger.LogInfo("死因按钮被点击了" + MakeNPCIDStr(npcId));
+                Instance.Logger.LogInfo("死因按钮被点击了" + VTools.MakeNPCIdStr(npcId));
                 JSONObject npcDeath = NpcJieSuanManager.inst.npcDeath.npcDeathJson[npcId.ToString()];
                 string DeathDesc = "唉…斯人已逝，幽思长存。且待我推算一番……";
                 DeathDesc += $"{Environment.NewLine}死者姓名：{VTools.GetNPCName(npcId)}";
@@ -225,7 +255,8 @@ namespace Ventulus
                 if (npcDeath.HasField("deathType"))
                 {
                     int deathType = npcDeath.GetInt("deathType");
-                    DeathDesc += $"{Environment.NewLine}死因：{NPCdeathType[npcDeath.GetInt("deathType")].Replace("玩家", Tools.GetPlayerName()) ?? "未知"}";
+
+                    DeathDesc += $"{Environment.NewLine}死因：{NPCdeathType[deathType]?.Replace("玩家", Tools.GetPlayerName()) ?? "未知"}";
                 }
                 if (npcDeath.HasField("killNpcId"))
                 {
@@ -246,7 +277,7 @@ namespace Ventulus
 
             static UnityAction ClickShouQu(int npcId)
             {
-                Instance.Logger.LogInfo("收取按钮被点击了" + MakeNPCIDStr(npcId));
+                Instance.Logger.LogInfo("收取按钮被点击了" + VTools.MakeNPCIdStr(npcId));
 
                 Dictionary<string, List<EmailData>> newEmailDictionary = PlayerEx.Player.emailDateMag.newEmailDictionary;
                 Dictionary<string, List<EmailData>> hasReadEmailDictionary = PlayerEx.Player.emailDateMag.hasReadEmailDictionary;
@@ -342,15 +373,7 @@ namespace Ventulus
                 }
                 return has;
             }
-            private static string MakeNPCIDStr(int id)
-            {
-                id = NPCEx.NPCIDToNew(id);
-                int npcId = NPCEx.NPCIDToOld(id);
-                string str = id >= 20000 ? id.ToString() : string.Empty;
-                if (npcId < 20000)
-                    str += $"({npcId})";
-                return str;
-            }
+
 
             [HarmonyPostfix]
             [HarmonyPatch(nameof(CyFriendCell.updateState))]
@@ -361,10 +384,12 @@ namespace Ventulus
                 Transform tShanChu = __instance.transform.Find("删除");
                 Transform tShouQu = __instance.transform.Find("收取");
                 Transform tSiYin = __instance.transform.Find("死因");
+                Transform tFeiJian = __instance.transform.Find("飞剑");
                 if (tShanChu) tShanChu.gameObject.SetActive(__instance.isSelect);
                 if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly);
                 if (tShouQu) tShouQu.gameObject.SetActive(__instance.isSelect && hasShouQuItem(__instance.npcId));
                 if (tSiYin) tSiYin.gameObject.SetActive(__instance.isSelect && __instance.isDeath);
+                if (tFeiJian) tFeiJian.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly && __instance.npcId >= 20000);
                 //工具人是否能查看的开关
                 //if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly && NPCEx.NPCIDToNew(__instance.npcId) >= 20000);
 
@@ -377,6 +402,13 @@ namespace Ventulus
             {
                 //有标记的置顶
                 SortNpcCells(__instance.transform.parent);
+
+            }
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(CyFriendCell.Click))]
+            public static void Click_Postfix(CyFriendCell __instance)
+            {
+                Instance.Logger.LogMessage("Click" + __instance.npcId);
 
             }
 
@@ -440,19 +472,24 @@ namespace Ventulus
             {
                 var t = __instance.transform.Find("List/Viewport/Content");
                 SortNpcCells(t);
-                Instance.Logger.LogInfo(Instance.CyOpenInfoPanel);
-                //尝试选中刚才的npc
-                if (Instance.CyOpenInfoPanel > 0)
-                {
-                    CyFriendCell CyFriendCell = __instance.friendCells.FirstOrDefault(x => x.npcId == Instance.CyOpenInfoPanel);
-                    if (CyFriendCell != null)
-                    {
-                        Instance.Logger.LogInfo("找到要选中的npccell" + Instance.CyOpenInfoPanel);
-                        CyFriendCell.Click();
-                    }
-                }
 
+                //尝试选中刚才的npc
+                if (Instance.CyOpenInfoPanel > 0 || Instance.CyOpenZengLi > 0)
+                {
+                    foreach (CyFriendCell cell in __instance.friendCells)
+                    {
+                        if (cell.npcId == Instance.CyOpenInfoPanel || cell.npcId == Instance.CyOpenZengLi)
+                        {
+                            Instance.Logger.LogInfo("找到要选中的npccell" + Instance.CyOpenInfoPanel + Instance.CyOpenZengLi);
+                            CyUIMag.inst.cyEmail.Init(cell.npcId);
+                            cell.Click();
+                            break;
+                        }
+                    }
+
+                }
                 Instance.CyOpenInfoPanel = -1;
+                Instance.CyOpenZengLi = -1;
             }
 
             [HarmonyPrefix]
@@ -553,6 +590,77 @@ namespace Ventulus
                     PanelMamager.inst.OpenPanel(PanelMamager.PanelType.传音符, 1);
 
                 }
+            }
+
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCJiaoHu.HideNPCZengLi))]
+            public static void HideNPCZengLi_Postfix()
+            {
+                Instance.Logger.LogInfo("关闭NPC赠礼");
+                Instance.Logger.LogInfo(Instance.CyOpenZengLi);
+                if (Instance.CyOpenZengLi > 0)
+                {
+                    //重新打开传音面板，比较绿皮
+                    Instance.Logger.LogInfo("重新打开传音符");
+                    Instance.Logger.LogInfo(Instance.CyOpenZengLi);
+                    PanelMamager.inst.OpenPanel(PanelMamager.PanelType.传音符, 1);
+
+                }
+            }
+        }
+        [HarmonyPatch(typeof(UINPCZengLi))]
+        class UINPCZengLi_Patch
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch(nameof(UINPCZengLi.OnOKBtnClick))]
+            public static bool OnOKBtnClick_Prefix()
+            {
+                if (Instance.CyOpenZengLi > 0)
+                {
+                    //拦截原版赠礼
+                    Instance.Logger.LogInfo("拦截赠礼确定");
+                    Instance.Logger.LogInfo(Instance.CyOpenZengLi);
+                    UIIconShow ZengLiSlot = UINPCJiaoHu.Inst.ZengLi.ZengLiSlot;
+                    string npcsay = "（只见天边的一道剑光须臾间就到了眼前，其上还有一个包裹，此刻破空声才堪堪传来）";
+                    if (ZengLiSlot.NowType != 0)
+                    {
+                        Instance.Logger.LogInfo("发送npc请求邮件");
+                        VTools.SendNewEmail(Instance.CyOpenZengLi, npcsay, SendTime: VTools.nowTime, actionId: 2, itemId: ZengLiSlot.tmpItem.itemID, itemNum: ZengLiSlot.Count, outtime: 1);
+                        UINPCJiaoHu.Inst.ZengLi.RefreshUI();
+                        UINPCJiaoHu.Inst.HideNPCZengLi();
+                    }
+                    return false;
+                }
+                return true;
+            }
+
+            [HarmonyPrefix]
+            [HarmonyPatch(nameof(UINPCZengLi.OnReturnBtnClick))]
+            public static bool OnReturnBtnClick_Prefix()
+            {
+                if (Instance.CyOpenZengLi > 0)
+                {
+                    Instance.Logger.LogInfo("拦截赠礼返回");
+                    UINPCJiaoHu.Inst.HideNPCZengLi();
+                    return false;
+                }
+                return true;
+            }
+        }
+
+
+        //??
+        [HarmonyPatch(typeof(EmailData))]
+        class EmailData_Patch
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch(nameof(EmailData.CheckIsOut))]
+            public static bool CheckIsOut_Prefix(EmailData __instance)
+            {
+                Instance.Logger.LogMessage("CheckIsOut");
+                Instance.Logger.LogMessage(__instance.sendTime);
+                Instance.Logger.LogMessage(__instance.outTime.ToString());
+                return true;
             }
         }
     }
