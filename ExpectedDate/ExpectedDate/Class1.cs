@@ -7,18 +7,19 @@ using script.ExchangeMeeting.Logic.Interface;
 using script.ExchangeMeeting.UI.Interface;
 //using KBEngine;
 using script.ExchangeMeeting.UI.UI;
+using script.ItemSource.Interface;
 using script.NewLianDan;
 using script.NewLianDan.LianDan;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static DebuggingEssentials.RuntimeInspector;
-using static UINPCQingJiaoSkillData;
+
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.ExpectedDate", "预计日期", "2.0.0")]
+    [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInPlugin("Ventulus.MCS.ExpectedDate", "预计日期", "2.1.0")]
     public class ExpectedDate : BaseUnityPlugin
     {
         void Awake()
@@ -48,9 +49,7 @@ namespace Ventulus
                 int itemID = tmpIcon.tmpItem.itemID;
                 int lingwuday = Tools.CalcLingWuTime(itemID);
 
-                KBEngine.Avatar player = Tools.instance.getPlayer();
-                DateTime yuqi = player.worldTimeMag.getNowTime().AddDays(lingwuday);
-
+                DateTime yuqi = VTools.NowTime.AddDays(lingwuday);
                 __instance.LingWuXiaoHaoText.text += $" 预计日期{yuqi.Year}年{yuqi.Month}月{yuqi.Day}日";
             }
         }
@@ -67,9 +66,7 @@ namespace Ventulus
                 int skill_ID = tmpIcon.tmpSkill.skill_ID;
                 int tupomon = Tools.CalcTuPoTime(skill_ID);
 
-                KBEngine.Avatar player = Tools.instance.getPlayer();
-                DateTime yuqi = player.worldTimeMag.getNowTime().AddMonths(tupomon);
-
+                DateTime yuqi = VTools.NowTime.AddMonths(tupomon);
                 __instance.TuPoXiaoHaoText.text += $" 预计日期{yuqi.Year}年{yuqi.Month}月{yuqi.Day}日";
             }
         }
@@ -84,9 +81,7 @@ namespace Ventulus
                 Instance.Logger.LogInfo("预计日期修改感悟");
                 int ganwuday = Traverse.Create(__instance).Field("curDay").GetValue<int>();
 
-                KBEngine.Avatar player = Tools.instance.getPlayer();
-                DateTime yuqi = player.worldTimeMag.getNowTime().AddDays(ganwuday);
-
+                DateTime yuqi = VTools.NowTime.AddDays(ganwuday);
                 Text curExpText = Traverse.Create(__instance).Field("curExpText").GetValue<Text>();
                 curExpText.AddText($" 预计日期{yuqi.Year}年{yuqi.Month}月{yuqi.Day}日");
                 Traverse.Create(__instance).Field("curExpText").SetValue(curExpText);
@@ -139,9 +134,8 @@ namespace Ventulus
                 }
                 else
                     liandanDays = 3 * count;
-                KBEngine.Avatar player = Tools.instance.getPlayer();
-                DateTime yuqi = player.worldTimeMag.getNowTime();
-                yuqi = yuqi.AddDays(liandanDays);
+
+                DateTime yuqi = VTools.NowTime.AddDays(liandanDays);
                 __instance.Content.AddText($" 预计日期{yuqi.Year}年{yuqi.Month}月{yuqi.Day}日");
             }
         }
@@ -156,9 +150,7 @@ namespace Ventulus
                 Instance.Logger.LogInfo("预计日期修改炼器");
                 int costTime = LianQiTotalManager.inst.lianQiResultManager.getCostTime();
 
-                KBEngine.Avatar player = Tools.instance.getPlayer();
-                DateTime yuqi = player.worldTimeMag.getNowTime().AddMonths(costTime);
-
+                DateTime yuqi = VTools.NowTime.AddMonths(costTime);
                 UIPopTip.Inst.Pop($"预计日期 {yuqi.Year}年{yuqi.Month}月{yuqi.Day}日", PopTipIconType.叹号);
                 return true;
             }
@@ -193,16 +185,46 @@ namespace Ventulus
                     //数据计算
                     if (data.NeedUpdate)
                     {
-                        int shengyumonth = data.NeedTime - data.HasCostTime;
-                        KBEngine.Avatar player = Tools.instance.getPlayer();
-                        DateTime yuqi = player.worldTimeMag.getNowTime().AddMonths(shengyumonth);
-                        SetYuQi(tYuQi, $"预计日期 {yuqi.Year}年{yuqi.Month}月", $"{data.HasCostTime}/{data.NeedTime}个月");
+                        int itemId = __instance.NeedItem.Item.Id;
+                        int XunzhaoMonth = data.NeedTime - data.HasCostTime;
+
+                        DateTime yuqi = VTools.NowTime.AddMonths(XunzhaoMonth);
+
+                        if (ABItemSourceMag.Inst.IO.NeedCheckCount(itemId))
+                        {
+                            ABItemSourceData ItemData = ABItemSource.Get().ItemSourceDataDic[itemId];
+                            if (ItemData.Count == 0)
+                            {
+                                //还在等待生产
+                                int ShengchanMonth = ItemData.UpdateTime - ItemData.HasCostTime;
+                                if (ShengchanMonth > XunzhaoMonth) 
+                                {
+                                    yuqi = VTools.NowTime.AddMonths(ShengchanMonth);
+                                    SetYuQi(tYuQi, $"重宝未现世，预计日期{yuqi.Year}年{yuqi.Month}月", $"已寻找{data.HasCostTime}/{data.HasCostTime + ShengchanMonth}个月");
+                                }
+                                else
+                                {
+                                    SetYuQi(tYuQi, $"重宝未现世，预计日期{yuqi.Year}年{yuqi.Month}月", $"已寻找{data.HasCostTime}/{data.HasCostTime + XunzhaoMonth}个月");
+                                }
+
+                            }
+                            else
+                            {
+                                //生产完，就只要寻找
+                                SetYuQi(tYuQi, $"重宝已现世，预计日期{yuqi.Year}年{yuqi.Month}月", $"已寻找{data.HasCostTime}/{data.HasCostTime + XunzhaoMonth}个月");
+                            }
+
+                        }
+                        else
+                        {
+
+                            SetYuQi(tYuQi, $"预计日期{yuqi.Year}年{yuqi.Month}月", $"已寻找{data.HasCostTime}/{data.NeedTime}个月");
+                        }
                     }
                     else
                     {
-                        SetYuQi(tYuQi, $"预计日期", $"无人能获取");
+                        SetYuQi(tYuQi, $"宝物过于贵重", $"无人能获取");
                     }
-
 
                 }
             }
@@ -266,10 +288,21 @@ namespace Ventulus
                             SetYuQi(tYuQi, $"预计日期", $"无人能获取");
                             break;
                         case 12:
+                            int itemId = __instance.NeedItem.Item.Id;
                             int NeedTime = CalculateNeedTime(__instance.NeedItem, __instance.GiveItems);
-                            KBEngine.Avatar player = Tools.instance.getPlayer();
-                            DateTime yuqi = player.worldTimeMag.getNowTime().AddMonths(NeedTime);
-                            SetYuQi(tYuQi, $"预计日期 约{yuqi.Year}年{yuqi.Month}月", $"约{NeedTime}个月");
+                            DateTime yuqi = VTools.NowTime.AddMonths(NeedTime);
+                            
+                            if (ABItemSourceMag.Inst.IO.NeedCheckCount(itemId))
+                            {
+                                ABItemSourceData ItemData = ABItemSource.Get().ItemSourceDataDic[itemId];
+                                SetYuQi(tYuQi, $"现世周期约{ItemData.UpdateTime}个月", $"寻找时间约{NeedTime}个月");
+                            }
+                            else
+                            {
+                                
+                                SetYuQi(tYuQi, $"预计日期约{yuqi.Year}年{yuqi.Month}月", $"寻找时间约{NeedTime}个月");
+                            }
+                                
                             break;
                         default:
                             SetYuQi(tYuQi, $"预计日期", $"计算错误");

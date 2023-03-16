@@ -47,6 +47,26 @@
       <HintPath>D:\Steam\steamapps\workshop\content\1189490\2824349934\BepInEx\core\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="BepInEx.Harmony">
+      <HintPath>D:\Steam\steamapps\workshop\content\1189490\2824349934\BepInEx\core\BepInEx.Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Preloader">
+      <HintPath>D:\Steam\steamapps\workshop\content\1189490\2824349934\BepInEx\core\BepInEx.Preloader.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="HarmonyXInterop">
+      <HintPath>D:\Steam\steamapps\workshop\content\1189490\2824349934\BepInEx\core\HarmonyXInterop.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Next">
+      <HintPath>D:\Steam\steamapps\workshop\content\1189490\2824845357\plugins\Next.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -59,6 +79,10 @@
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
@@ -67,8 +91,20 @@
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.TextCoreModule">
+      <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.TextCoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="VTools">
+      <HintPath>D:\Steam\steamapps\common\觅长生\本地Mod测试\微风的工具库\plugins\VTools.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
