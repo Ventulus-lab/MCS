@@ -38,6 +38,7 @@ namespace Ventulus
         public static CyContactOptimization Instance;
         private int CyOpenInfoPanel;
         private int CyOpenZengLi;
+        private float ScrollPosition = 1;
 
         private static Dictionary<int, string> NPCdeathType = new Dictionary<int, string>()
         {
@@ -119,9 +120,9 @@ namespace Ventulus
                 GameObject goFeiJian = MakeNewBiaoQian("飞剑");
                 goFeiJian.GetComponent<BtnCell>().mouseUp.AddListener(delegate { ClickFeiJian(npcId); });
 
-                //排序
+
                 //由于新邮件人是先初始化cell再放红点，所以这里不合适排序
-                //SortNpcCells(__instance.transform.parent);
+
                 //标签排位置
                 ArrangeLabelPositions(__instance.transform);
 
@@ -181,6 +182,7 @@ namespace Ventulus
 
                     UINPCJiaoHu.Inst.NowJiaoHuEnemy = npc;
                     UINPCJiaoHu.Inst.InfoPanel.npc = npc;
+                    Instance.ScrollPosition = CyUIMag.inst.npcList.GetComponentInChildren<UnityEngine.UI.ScrollRect>().verticalNormalizedPosition;
                     CyUIMag.inst.Close();
                     UINPCJiaoHu.Inst.ShowNPCInfoPanel(UINPCJiaoHu.Inst.NowJiaoHuEnemy);
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.HideTab();
@@ -190,12 +192,14 @@ namespace Ventulus
                     npc.RefreshData();
                     npc.IsFight = false;
                     UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
+                    Instance.ScrollPosition = CyUIMag.inst.npcList.GetComponentInChildren<UnityEngine.UI.ScrollRect>().verticalNormalizedPosition;
                     CyUIMag.inst.Close();
                     UINPCJiaoHu.Inst.ShowNPCInfoPanel(npc);
                     UINPCJiaoHu.Inst.InfoPanel.TabGroup.UnHideTab();
                 }
 
                 Instance.CyOpenInfoPanel = npcId;
+
                 Instance.Logger.LogInfo(Instance.CyOpenInfoPanel);
                 return null;
             }
@@ -216,6 +220,7 @@ namespace Ventulus
                     npc.RefreshData();
                     npc.IsFight = false;
                     UINPCJiaoHu.Inst.NowJiaoHuNPC = npc;
+                    Instance.ScrollPosition = CyUIMag.inst.npcList.GetComponentInChildren<UnityEngine.UI.ScrollRect>().verticalNormalizedPosition;
                     CyUIMag.inst.Close();
                     UINPCJiaoHu.Inst.ShowNPCZengLi();
                 }
@@ -228,9 +233,7 @@ namespace Ventulus
             static UnityAction ClickShanChu(int npcId)
             {
                 Instance.Logger.LogInfo("删除按钮被点击了" + VTools.MakeNPCIdStr(npcId));
-                //由于可能会是死人，在jsonData.instance.AvatarRandomJsonData里没有信息，所以得把name传进来
                 string name = VTools.GetNPCName(npcId);
-
 
                 USelectBox.Show($"确认要删除联系人{name}吗？ ", delegate
                 {
@@ -264,13 +267,7 @@ namespace Ventulus
                     string killNpcName = VTools.GetNPCName(killNpcId);
                     DeathDesc += $"{Environment.NewLine}凶手：{killNpcName}";
                 }
-                //KBEngine.Avatar player = Tools.instance.getPlayer();
-                ////加入新传音符
-                //EmailData emailData = new EmailData(npcId, isOld: true, CyFuId, player.worldTimeMag.nowTime)
-                //{
-                //    sceneName = DeathDesc
-                //};
-                //player.emailDateMag.AddNewEmail(npcId.ToString(), emailData);
+
                 VTools.SendOldEmail(npcId, 2, DeathDesc);
                 return null;
             }
@@ -393,17 +390,28 @@ namespace Ventulus
                 //工具人是否能查看的开关
                 //if (tChaKan) tChaKan.gameObject.SetActive(__instance.isSelect && !__instance.isDeath && !__instance.IsFly && NPCEx.NPCIDToNew(__instance.npcId) >= 20000);
 
-
+                //标签位置整理
                 ArrangeLabelPositions(__instance.transform);
             }
+
             [HarmonyPostfix]
             [HarmonyPatch(nameof(CyFriendCell.ClickTag))]
             public static void ClickTag_Postfix(CyFriendCell __instance)
             {
-                //有标记的置顶
-                SortNpcCells(__instance.transform.parent);
+                //重选排序
+                List<CyFriendCell> friendCells = CyUIMag.inst.npcList.friendCells;
+                friendCells.Sort(new CyFriendCellComparer());
+                for (int i = 0; i < friendCells.Count; i++)
+                {
+                    friendCells[i].transform.SetSiblingIndex(i);
+                }
+
+                //移动滚动条
+                if (__instance.isTag)
+                    CellScrollRect(1);
 
             }
+
             [HarmonyPostfix]
             [HarmonyPatch(nameof(CyFriendCell.Click))]
             public static void Click_Postfix(CyFriendCell __instance)
@@ -413,56 +421,30 @@ namespace Ventulus
             }
 
         }
-        static void SortNpcCells(Transform tContent)
+        static void CellScrollRect(float position = 2)
         {
-            int count = tContent.childCount;
-            Instance.Logger.LogInfo("排序cell共" + count);
-            if (count == 0) return;
-            int index = 0;
-            for (int i = 0; i < count; i++)
+            CyNpcList NpcList = CyUIMag.inst.npcList;
+
+            if (position > 1 && NpcList != null && NpcList.curSelectFriend != null)
             {
-                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
-                if (cell.isTag && cell.redDian.activeSelf)
+                int count = 0;
+                int num = NpcList.friendCells.Count;
+                foreach (CyFriendCell cell in NpcList.friendCells)
                 {
-                    cell.transform.SetAsLastSibling();
-                    index--;
+                    if (cell.npcId == NpcList.curSelectFriend.npcId)
+                        break;
+                    count++;
                 }
-                index++;
+                position = 1 - (float)count / num;
             }
-            index = 0;
-            for (int i = 0; i < count; i++)
-            {
-                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
-                if (!cell.isTag && cell.redDian.activeSelf)
-                {
-                    cell.transform.SetAsLastSibling();
-                    index--;
-                }
-                index++;
-            }
-            index = 0;
-            for (int i = 0; i < count; i++)
-            {
-                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
-                if (cell.isTag && !cell.redDian.activeSelf)
-                {
-                    cell.transform.SetAsLastSibling();
-                    index--;
-                }
-                index++;
-            }
-            index = 0;
-            for (int i = 0; i < count; i++)
-            {
-                CyFriendCell cell = tContent.GetChild(index).GetComponent<CyFriendCell>();
-                if (!cell.isTag && !cell.redDian.activeSelf)
-                {
-                    cell.transform.SetAsLastSibling();
-                    index--;
-                }
-                index++;
-            }
+
+
+            Instance.Logger.LogInfo(position.ToString());
+            ScrollRect ScrollRect = NpcList.GetComponentInChildren<UnityEngine.UI.ScrollRect>();
+            ScrollRect.verticalNormalizedPosition = position;
+
         }
+
         [HarmonyPatch(typeof(CyNpcList))]
         class CyNpcList_Patch
         {
@@ -470,8 +452,13 @@ namespace Ventulus
             [HarmonyPatch(nameof(CyNpcList.Init))]
             public static void Init_Postfix(CyNpcList __instance)
             {
-                var t = __instance.transform.Find("List/Viewport/Content");
-                SortNpcCells(t);
+
+                List<CyFriendCell> friendCells = __instance.friendCells;
+                friendCells.Sort(new CyFriendCellComparer());
+                for (int i = 0; i < friendCells.Count; i++)
+                {
+                    friendCells[i].transform.SetSiblingIndex(i);
+                }
 
                 //尝试选中刚才的npc
                 if (Instance.CyOpenInfoPanel > 0 || Instance.CyOpenZengLi > 0)
@@ -481,97 +468,100 @@ namespace Ventulus
                         if (cell.npcId == Instance.CyOpenInfoPanel || cell.npcId == Instance.CyOpenZengLi)
                         {
                             Instance.Logger.LogInfo("找到要选中的npccell" + Instance.CyOpenInfoPanel + Instance.CyOpenZengLi);
-                            CyUIMag.inst.cyEmail.Init(cell.npcId);
-                            cell.Click();
+                            //CyUIMag.inst.cyEmail.Init(cell.npcId);
+                            Instance.StartCoroutine(Instance.SelectCell(cell));
                             break;
                         }
                     }
-
                 }
+                //无论是否重选人，都恢复
                 Instance.CyOpenInfoPanel = -1;
                 Instance.CyOpenZengLi = -1;
             }
 
-            [HarmonyPrefix]
-            [HarmonyPatch("InitNpcList")]
-            public static void InitNpcList_Prefix(CyNpcList __instance)
-            {
-                __instance.friendList.Sort(new friendListComparer());
-
-            }
         }
-        //联系人比较器，返回负数为较小在前，正数为较大在后
-        public class friendListComparer : Comparer<int>
+        //延后一帧再选中，并滚动
+        IEnumerator SelectCell(CyFriendCell cell)
         {
-            public override int Compare(int x, int y)
+            yield return 1;
+            cell.Click();
+            yield return null;
+            //移动滚动条
+            CellScrollRect(Instance.ScrollPosition);
+        }
+
+        //联系人比较器，返回负数为较小在前，正数为较大在后
+
+        public class CyFriendCellComparer : Comparer<CyFriendCell>
+        {
+            public override int Compare(CyFriendCell A, CyFriendCell B)
             {
-
-
                 //红点优先
-                Dictionary<string, List<EmailData>> newEmailDict = Tools.instance.getPlayer().emailDateMag.newEmailDictionary;
-                List<int> TagNpcList = Tools.instance.getPlayer().emailDateMag.TagNpcList;
-                if (newEmailDict.ContainsKey(x.ToString()) && !newEmailDict.ContainsKey(x.ToString()))
+                if (A.redDian.activeSelf && !B.redDian.activeSelf)
                 {
                     return -1;
                 }
-                else if (!newEmailDict.ContainsKey(x.ToString()) && newEmailDict.ContainsKey(x.ToString()))
+                else if (!A.redDian.activeSelf && B.redDian.activeSelf)
                 {
                     return 1;
+                }
+                if (A.isTag && !B.isTag)
+                {
+                    return -1;
                 }
                 //死亡和飞升的不管之前有没有标记，都先丢下去
-                if (NpcJieSuanManager.inst.IsDeath(x) && !NpcJieSuanManager.inst.IsDeath(y))
+                if (A.isDeath && !B.isDeath)
                 {
                     return 1;
                 }
-                else if (!NpcJieSuanManager.inst.IsDeath(x) && NpcJieSuanManager.inst.IsDeath(y))
+                else if (!A.isDeath && B.isDeath)
                 {
                     return -1;
                 }
 
-                if (NpcJieSuanManager.inst.IsFly(x) && !NpcJieSuanManager.inst.IsFly(y))
+                if (A.IsFly && !B.IsFly)
                 {
                     return 1;
                 }
-                else if (!NpcJieSuanManager.inst.IsFly(x) && NpcJieSuanManager.inst.IsFly(y))
+                else if (!A.IsFly && B.IsFly)
                 {
                     return -1;
                 }
+
                 //标记优先
-                if (TagNpcList.Contains(x) && !TagNpcList.Contains(y))
+                if (A.isTag && !B.isTag)
                 {
                     return -1;
                 }
-                else if (!TagNpcList.Contains(x) && TagNpcList.Contains(y))
+                else if (!A.isTag && B.isTag)
                 {
                     return 1;
                 }
-                //好感高的优先，死亡飞升的得排除
-                if (NpcJieSuanManager.inst.IsDeath(x) || NpcJieSuanManager.inst.IsFly(x) || NpcJieSuanManager.inst.IsDeath(y) || NpcJieSuanManager.inst.IsFly(y))
+
+                //同时死亡飞升的得排除
+                if (A.isDeath || B.isDeath || A.IsFly || B.IsFly)
                     return 0;
                 else
                 {
-                    UINPCData npcx = new UINPCData(x);
-                    if (NPCEx.NPCIDToNew(x) >= 20000)
-                    {
+                    UINPCData npcx = new UINPCData(A.npcId);
+                    if (NPCEx.NPCIDToNew(A.npcId) >= 20000)
                         npcx.RefreshData();
-                    }
                     else
-                    {
                         npcx.RefreshOldNpcData();
-                    }
-                    UINPCData npcy = new UINPCData(y);
-                    if (NPCEx.NPCIDToNew(y) >= 20000)
-                    {
-                        npcy.RefreshData();
-                    }
-                    else
-                    {
-                        npcy.RefreshOldNpcData();
-                    }
-                    return npcy.Favor - npcx.Favor;
-                }
 
+                    UINPCData npcy = new UINPCData(B.npcId);
+                    if (NPCEx.NPCIDToNew(B.npcId) >= 20000)
+                        npcy.RefreshData();
+                    else
+                        npcy.RefreshOldNpcData();
+
+                    if (npcy.Favor != npcx.Favor)
+                        return npcy.Favor - npcx.Favor;
+                }
+                //最后按id排序避免乱跑
+                return A.npcId - B.npcId;
             }
+
         }
         [HarmonyPatch(typeof(UINPCJiaoHu))]
         class UINPCJiaoHu_Patch
@@ -624,10 +614,32 @@ namespace Ventulus
                     string npcsay = "（只见天边的一道剑光须臾间就到了眼前，其上还有一个包裹，此刻破空声才堪堪传来）";
                     if (ZengLiSlot.NowType != 0)
                     {
+                        int itemId = ZengLiSlot.tmpItem.itemID;
+                        int itemNum = ZengLiSlot.Count;
+                        //计算运费
+                        int addCount = 10000;
+                        if (jsonData.instance.ItemJsonData.HasField(itemId.ToString()))
+                            addCount = jsonData.instance.ItemJsonData[itemId.ToString()]["price"].I * itemNum;
+                        int Shipping = 2000 + addCount / 20;
+                        Instance.Logger.LogInfo("运费" + Shipping.ToString());
+                        //扣运费
+                        KBEngine.Avatar player = Tools.instance.getPlayer();
+                        if ((int)player.money < Shipping)
+                        {
+                            UIPopTip.Inst.Pop("没有足够灵石支付飞剑灵力", PopTipIconType.包裹);
+                            return false;
+                        }
+                        else
+                        {
+                            player.AddMoney(-Shipping);
+                            UIPopTip.Inst.Pop($"{Shipping.ToCNNumber()}灵石化作了飞剑的灵力", PopTipIconType.包裹);
+                        }    
                         Instance.Logger.LogInfo("发送npc请求邮件");
-                        VTools.SendNewEmail(Instance.CyOpenZengLi, npcsay, SendTime: VTools.nowTime, actionId: 2, itemId: ZengLiSlot.tmpItem.itemID, itemNum: ZengLiSlot.Count, outtime: 1);
+                        VTools.SendNewEmail(Instance.CyOpenZengLi, npcsay, SendTime: VTools.nowTime, actionId: 2, itemId: itemId, itemNum: itemNum, outtime: 1);
                         UINPCJiaoHu.Inst.ZengLi.RefreshUI();
                         UINPCJiaoHu.Inst.HideNPCZengLi();
+                        //新邮件，导致联系人排序置顶
+                        Instance.ScrollPosition = 1f;
                     }
                     return false;
                 }
@@ -648,20 +660,5 @@ namespace Ventulus
             }
         }
 
-
-        //??
-        [HarmonyPatch(typeof(EmailData))]
-        class EmailData_Patch
-        {
-            [HarmonyPrefix]
-            [HarmonyPatch(nameof(EmailData.CheckIsOut))]
-            public static bool CheckIsOut_Prefix(EmailData __instance)
-            {
-                Instance.Logger.LogMessage("CheckIsOut");
-                Instance.Logger.LogMessage(__instance.sendTime);
-                Instance.Logger.LogMessage(__instance.outTime.ToString());
-                return true;
-            }
-        }
     }
 }
