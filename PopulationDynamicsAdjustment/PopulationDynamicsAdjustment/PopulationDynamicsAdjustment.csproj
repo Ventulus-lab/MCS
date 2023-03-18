@@ -63,6 +63,10 @@
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Next">
+      <HintPath>D:\Steam\steamapps\workshop\content\1189490\2824845357\plugins\Next.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -93,6 +97,10 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>D:\Steam\steamapps\common\觅长生\觅长生_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="VTools">
+      <HintPath>D:\Steam\steamapps\common\觅长生\本地Mod测试\微风的工具库\plugins\VTools.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

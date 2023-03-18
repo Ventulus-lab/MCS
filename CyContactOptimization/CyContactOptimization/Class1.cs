@@ -17,6 +17,7 @@ using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.Playables;
 using UnityEngine.UI;
 using YSGame;
 
@@ -234,6 +235,9 @@ namespace Ventulus
             {
                 Instance.Logger.LogInfo("删除按钮被点击了" + VTools.MakeNPCIdStr(npcId));
                 string name = VTools.GetNPCName(npcId);
+                //////
+                Instance.Logger.LogInfo("委托任务测试");
+                VTools.SendNTaskEmail(npcId, 703, "委托任务测试703");
 
                 USelectBox.Show($"确认要删除联系人{name}吗？ ", delegate
                 {
@@ -334,7 +338,7 @@ namespace Ventulus
                         }
                     }
                 }
-
+                
                 CyUIMag.inst.cyEmail.cySendBtn.Hide();
                 CyUIMag.inst.cyEmail.Init(npcId);
                 return null;

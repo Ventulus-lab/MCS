@@ -23,7 +23,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
-    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.0.2")]
+    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.1.0")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
         void Awake()
@@ -36,7 +36,6 @@ namespace Ventulus
         void Start()
         {
             new Harmony("Ventulus.MCS.PopulationDynamicsAdjustment").PatchAll();
-            MessageMag.Instance.Register(MessageName.MSG_GameInitFinish, new Action<MessageData>(this.AddCy100000));
             MessageMag.Instance.Register(MessageName.MSG_Npc_JieSuan_COMPLETE, new Action<MessageData>(this.AfterJieSuanStatistics));
 
             Logger.LogInfo("加载成功");
@@ -46,7 +45,6 @@ namespace Ventulus
         private static DateTime LastJieSuanTime;
         public static ConfigEntry<PopulationEnum> TargetPopulation;
         public static ConfigEntry<bool> AllowSpecialLiuPai;
-        private static readonly string Cy100000 = @"{""id"":100000,""AvatarID"":2,""info"":""{DiDian}"",""Type"":3,""DelayTime"":[],""TaskID"":0,""TaskIndex"":[],""WeiTuo"":0,""ItemID"":0,""valueID"":[],""value"":[],""SPvalueID"":0,""StarTime"":"""",""EndTime"":"""",""Level"":[],""HaoGanDu"":0,""EventValue"":[],""fuhao"":"""",""IsOnly"":1,""IsAdd"":0,""IsDelete"":0,""NPCLevel"":[],""IsAlive"":0}";
         public static ConfigEntry<bool> StatisticsBroadcast;
         public enum PopulationEnum
         {
@@ -75,8 +73,7 @@ namespace Ventulus
         private static WeightDictionary NPCTypeAdjustment;
         private static int PopulationAdjustment;
 
-        //魏老播报，占用传音符id100000
-        private static int CyFuId = 100000;
+        //魏老播报
         private static int CyNPCId = 2;
 
         [HarmonyPatch(typeof(NpcJieSuanManager))]
@@ -89,18 +86,11 @@ namespace Ventulus
                 LastJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
                 Instance.Logger.LogInfo("开始结算了");
                 Instance.Logger.LogInfo(NpcJieSuanManager.inst.JieSuanTime);
+
                 return true;
             }
         }
 
-        public void AddCy100000(MessageData data = null)
-        {
-
-            Logger.LogInfo("增加100000号传音符");
-            JSONObject js100000 = new JSONObject(Cy100000);
-            Logger.LogInfo(js100000.ToString());
-            jsonData.instance.ChuanYingFuBiao.SetField(CyFuId.ToString(), js100000);
-        }
         public void AfterJieSuanStatistics(MessageData data = null)
         {
 
@@ -108,48 +98,20 @@ namespace Ventulus
             Logger.LogInfo(NpcJieSuanManager.inst.JieSuanTime);
 
             //每次结算
-
-            //StatisticsPopulation();
-
-
             StartCoroutine(AdjustPopulation());
-
-
         }
-        public void AddCyNPC()
+        public void AddCyNPC(DateTime sendtime)
         {
             KBEngine.Avatar Player = Tools.instance.getPlayer();
-            //ChuanYingManager.ReadData竟然是Private，还是手动给他加吧
-            if (!jsonData.instance.ChuanYingFuBiao.HasField(CyFuId.ToString()))
-            {
-                AddCy100000();
-            }
-            if (!Player.NewChuanYingList.HasField(CyFuId.ToString()))
-            {
-                JSONObject emailjson = jsonData.instance.ChuanYingFuBiao[CyFuId.ToString()];
-                emailjson.SetField("sendTime", LastJieSuanTime.ToString());
-                emailjson.SetField("CanCaoZuo", false);
-                emailjson.SetField("AvatarName", jsonData.instance.AvatarJsonData[CyNPCId.ToString()]["Name"].Str);
-                Logger.LogMessage(emailjson.ToString());
-                Player.NewChuanYingList.SetField(CyFuId.ToString(), emailjson);
-            }
+
             if (StatisticsBroadcast.Value && !Player.emailDateMag.cyNpcList.Contains(CyNPCId))
             {
 
                 Logger.LogInfo("传音主持人");
                 Player.emailDateMag.cyNpcList.Add(CyNPCId);
-                //魏老特殊
-                if (NPCEx.NPCIDToNew(CyNPCId) < 20000)
-                {
-                    JSONObject npcjson = jsonData.instance.AvatarJsonData[CyNPCId.ToString()];
-                    npcjson.SetField("ActionId", 1);
-                }
+                string Message = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。或许会对你修行有所帮助。";
                 //加入新传音符
-                EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, LastJieSuanTime.ToString())
-                {
-                    sceneName = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。或许会对你修行有所帮助。"
-                };
-                Player.emailDateMag.AddNewEmail(CyNPCId.ToString(), emailData);
+                VTools.SendOldEmail(CyNPCId, CyNPCId, Message, sendtime.ToString());
 
             }
             else if (!StatisticsBroadcast.Value && Player.emailDateMag.cyNpcList.Contains(CyNPCId))
@@ -170,10 +132,12 @@ namespace Ventulus
         IEnumerator AdjustPopulation()
         {
             //补充进入结算状态，防止快速存档影响
+            UIPopTip.Inst.Pop("开始人口普查", PopTipIconType.任务进度);
             //NpcJieSuanManager.inst.isCanJieSuan = false;
             //等待一秒
             yield return new WaitForSeconds(1f);
-            AddCyNPC();
+            
+            AddCyNPC(LastJieSuanTime);
             DateTime tempdate = LastJieSuanTime;
             DateTime NowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
             while (NowJieSuanTime > RecentJune(tempdate, 6))
@@ -185,7 +149,7 @@ namespace Ventulus
                 //调查人口
                 StatisticsPopulation();
                 string Broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}";
-                PopulationAdjustment = Math.Min(((int)TargetPopulation.Value - TotalPopulation) / N, (int)TargetPopulation.Value / 10);
+                PopulationAdjustment = Math.Min(((int)TargetPopulation.Value - TotalPopulation + N - 1) / N, (int)TargetPopulation.Value / 10);
                 if (PopulationAdjustment <= 0)
                 {
                     PopulationAdjustment = 0;
@@ -264,25 +228,20 @@ namespace Ventulus
                 if (StatisticsBroadcast.Value)
                 {
                     Logger.LogInfo("传音符播报");
-                    KBEngine.Avatar Player = Tools.instance.getPlayer();
-
-
-                    //判断100000是否存在
-                    AddCyNPC();
-
 
                     //加入新传音符
-                    EmailData emailData = new EmailData(CyNPCId, isOld: true, CyFuId, cycledateTime.ToString())
-                    {
-                        sceneName = Broadcast
-                    };
-                    Player.emailDateMag.AddNewEmail(CyNPCId.ToString(), emailData);
+                    VTools.SendOldEmail(CyNPCId, CyNPCId, Broadcast);
                 }
                 tempdate = tempdate.AddYears(1);
             }
 
             //退出结算状态
             //NpcJieSuanManager.inst.isCanJieSuan = true;
+            UIPopTip.Inst.Pop("完成人口普查", PopTipIconType.任务完成);
+
+
+            //Logger.LogInfo("委托任务测试");
+            //VTools.SendNTaskEmail(2, 803, "委托任务测试803");
         }
         public void StatisticsPopulation()
         {
@@ -354,12 +313,10 @@ namespace Ventulus
         public int CreateNpcByTypeAndLevel(int type, int level, int banliupai = 0)
         {
             List<JSONObject> list = jsonData.instance.NPCLeiXingDate.list.Where(x => x["Type"].I == type && x["Level"].I == level && x["LiuPai"].I != banliupai).ToList();
-            if (list.Count() > 0)
+            if (list.Count > 0)
             {
-                NPCFactory npcFactory = FactoryManager.inst.npcFactory;
-                int j = npcFactory.getRandom(0, list.Count() - 1);
-
-                return npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false);
+                int j = VTools.GetRandom(0, list.Count);
+                return FactoryManager.inst.npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false);
             }
             return 0;
         }
@@ -469,157 +426,4 @@ namespace Ventulus
         };
     }
 
-    public class WeightDictionary
-    {
-        public Dictionary<int, double> WeightDict
-        {
-            get;
-            set;
-        }
-        public Dictionary<int, string> NameDict
-        {
-            get;
-            set;
-        }
-        private SortedDictionary<int, double> _sortDict;
-        private Dictionary<int, double> _percentDict;
-
-        public WeightDictionary()
-        {
-            WeightDict = new Dictionary<int, double>();
-            NameDict = new Dictionary<int, string>();
-        }
-        public WeightDictionary(Dictionary<int, double> weightdict)
-        {
-            WeightDict = new Dictionary<int, double>(weightdict);
-            NameDict = new Dictionary<int, string>();
-        }
-        public WeightDictionary(Dictionary<int, string> namedict)
-        {
-            WeightDict = new Dictionary<int, double>();
-            NameDict = new Dictionary<int, string>(namedict);
-        }
-
-        public WeightDictionary(Dictionary<int, double> weightdict, Dictionary<int, string> namedict)
-        {
-            WeightDict = new Dictionary<int, double>(weightdict);
-            NameDict = new Dictionary<int, string>(namedict);
-        }
-        public WeightDictionary(WeightDictionary weightdictionary)
-        {
-            WeightDict = new Dictionary<int, double>(weightdictionary.WeightDict);
-            NameDict = new Dictionary<int, string>(weightdictionary.NameDict);
-        }
-        public void AddWeight(int key)
-        {
-            AddWeight(key, 1);
-        }
-        public void AddWeight(int key, double num)
-        {
-            if (WeightDict.ContainsKey(key))
-                WeightDict[key] += num;
-            else
-                WeightDict.Add(key, num);
-        }
-        public override string ToString()
-        {
-            StringBuilder SB = new StringBuilder();
-            SB.Append(Environment.NewLine);
-            _sortDict = new SortedDictionary<int, double>(WeightDict);
-            foreach (var item in _sortDict)
-            {
-                SB.Append("[");
-                SB.Append(item.Key);
-                if (NameDict.ContainsKey(item.Key))
-                    SB.Append(NameDict[item.Key]);
-                SB.Append(",");
-                SB.Append(item.Value);
-                SB.Append("]");
-                SB.Append(Environment.NewLine);
-            }
-            return SB.ToString();
-        }
-        public void Normalization()
-        {
-            WeightDict = Normalization(WeightDict);
-        }
-        public Dictionary<int, double> Normalization(Dictionary<int, double> weightdict)
-        {
-            _sortDict = new SortedDictionary<int, double>();
-            double sum = weightdict.Values.Where(x => x >= 0).Sum();
-            foreach (var item in weightdict)
-            {
-                _sortDict.Add(item.Key, item.Value > 0 ? item.Value / sum : 0);
-            }
-            return new Dictionary<int, double>(_sortDict);
-        }
-        public Dictionary<int, double> PositiveSubtraction(Dictionary<int, double> percentdict2)
-        {
-            this.Normalization();
-            _percentDict = Normalization(percentdict2);
-            _sortDict = new SortedDictionary<int, double>();
-            foreach (var item in WeightDict)
-            {
-                if (_percentDict.ContainsKey(item.Key))
-                {
-                    double m = item.Value - _percentDict[item.Key];
-                    _sortDict.Add(item.Key, m > 0 ? m : 0);
-                }
-                else
-                {
-                    _sortDict.Add(item.Key, item.Value);
-                }
-            }
-            if (_sortDict.Values.Where(x => x >= 0).Sum() <= 0)
-            {
-                return new Dictionary<int, double>(WeightDict);
-            }
-            return new Dictionary<int, double>(_sortDict);
-        }
-        public System.Random random = new System.Random();
-        public static long GetRandomLong()
-        {
-            byte[] array = new byte[8];
-            new RNGCryptoServiceProvider().GetBytes(array);
-            return BitConverter.ToInt64(array, 0);
-        }
-        public static double GetRandomDoubleRoll(double max)
-        {
-            if (max <= 0) return 0;
-            double result;
-            do
-            {
-                result = Math.Abs((double)GetRandomLong() / long.MaxValue);
-            } while (result >= max);
-            return result;
-        }
-        public double GetRandomDoubleRoll2(double max)
-        {
-            if (max <= 0) return 0;
-            double result;
-            do
-            {
-                result = random.NextDouble();
-            } while (result >= max);
-            return result;
-        }
-        public int RollByWeight(out double roll)
-        {
-            double sum = WeightDict.Values.Where(x => x >= 0).Sum();
-            roll = GetRandomDoubleRoll2(sum);
-            if (sum <= 0) return 0;
-
-            double countsum = 0;
-            foreach (var item in WeightDict)
-            {
-                if (item.Value <= 0) continue;
-                countsum += item.Value;
-                if (countsum > roll)
-                {
-                    return item.Key;
-                }
-            }
-            return 0;
-        }
-    }
 }
