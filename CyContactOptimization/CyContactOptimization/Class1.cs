@@ -141,7 +141,7 @@ namespace Ventulus
                     List<EmailData> emails = newEmailDictionary[npcId.ToString()];
                     foreach (EmailData emailData in emails)
                     {
-                        if (emailData.isOld && npcId != 912 || emailData.actionId == 2)
+                        if (emailData.isOld && npcId != 2 || emailData.actionId == 2)
                         {
                             BigRedDian = true;
                             break;
@@ -620,7 +620,7 @@ namespace Ventulus
                         int addCount = 10000;
                         if (jsonData.instance.ItemJsonData.HasField(itemId.ToString()))
                             addCount = jsonData.instance.ItemJsonData[itemId.ToString()]["price"].I * itemNum;
-                        int Shipping = 2000 + addCount / 20;
+                        int Shipping = 2500 + addCount / 20;
                         Instance.Logger.LogInfo("运费" + Shipping.ToString());
                         //扣运费
                         KBEngine.Avatar player = Tools.instance.getPlayer();
