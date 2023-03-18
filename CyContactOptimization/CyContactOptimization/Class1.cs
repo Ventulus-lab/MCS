@@ -23,7 +23,7 @@ using YSGame;
 namespace Ventulus
 {
     [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "2.0.0")]
+    [BepInPlugin("Ventulus.MCS.CyContactOptimization", "传音符联系人优化", "2.0.1")]
     public class CyContactOptimization : BaseUnityPlugin
     {
         void Awake()
@@ -484,6 +484,7 @@ namespace Ventulus
         IEnumerator SelectCell(CyFriendCell cell)
         {
             yield return 1;
+            yield return 2;
             cell.Click();
             yield return null;
             //移动滚动条
@@ -597,6 +598,16 @@ namespace Ventulus
 
                 }
             }
+
+            [HarmonyPostfix]
+            [HarmonyPatch(nameof(UINPCJiaoHu.ShowJiaoHuPop))]
+            public static void ShowJiaoHuPop_Postfix()
+            {
+                //优化标志重置，避免特殊情况
+                Instance.Logger.LogInfo("重置标志");
+                Instance.CyOpenInfoPanel = -1;
+                Instance.CyOpenZengLi = -1;
+            }
         }
         [HarmonyPatch(typeof(UINPCZengLi))]
         class UINPCZengLi_Patch
@@ -633,7 +644,7 @@ namespace Ventulus
                         {
                             player.AddMoney(-Shipping);
                             UIPopTip.Inst.Pop($"{Shipping.ToCNNumber()}灵石化作了飞剑的灵力", PopTipIconType.包裹);
-                        }    
+                        }
                         Instance.Logger.LogInfo("发送npc请求邮件");
                         VTools.SendNewEmail(Instance.CyOpenZengLi, npcsay, SendTime: VTools.nowTime, actionId: 2, itemId: itemId, itemNum: itemNum, outtime: 1);
                         UINPCJiaoHu.Inst.ZengLi.RefreshUI();
@@ -659,6 +670,7 @@ namespace Ventulus
                 return true;
             }
         }
+
 
     }
 }
