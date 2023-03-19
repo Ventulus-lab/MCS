@@ -101,6 +101,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="VNext.cs" />
     <Compile Include="VTools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

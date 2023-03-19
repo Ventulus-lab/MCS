@@ -23,6 +23,7 @@ using UnityEngine.UI;
 
 namespace Ventulus
 {
+    [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.1.0")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
@@ -109,7 +110,7 @@ namespace Ventulus
 
                 Logger.LogInfo("传音主持人");
                 Player.emailDateMag.cyNpcList.Add(CyNPCId);
-                string Message = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。或许会对你修行有所帮助。";
+                string Message = "咳咳…信号有点不好。我在这把剑里，牵引灵机，能些许感受到此方天地中修士的数量。这些信息或许会对你修行有所帮助。";
                 //加入新传音符
                 VTools.SendOldEmail(CyNPCId, CyNPCId, Message, sendtime.ToString());
 
@@ -132,7 +133,7 @@ namespace Ventulus
         IEnumerator AdjustPopulation()
         {
             //补充进入结算状态，防止快速存档影响
-            UIPopTip.Inst.Pop("开始人口普查", PopTipIconType.任务进度);
+            //UIPopTip.Inst.Pop("开始人口普查", PopTipIconType.任务进度);
             //NpcJieSuanManager.inst.isCanJieSuan = false;
             //等待一秒
             yield return new WaitForSeconds(1f);
@@ -202,7 +203,7 @@ namespace Ventulus
                         //Logger.LogInfo($"{ChooseBigLevel}{NPCBigLevel[ChooseBigLevel]}+{ChooseType}{NPCType[ChooseType]}");
                         if (ChooseBigLevel <= 0 || ChooseType <= 0) continue;
                         int banliupai = !AllowSpecialLiuPai.Value && TypeBanLiuPai.ContainsKey(ChooseType) ? TypeBanLiuPai[ChooseType] : 0;
-                        int id = CreateNpcByTypeAndLevel(ChooseType, BigLevelToLevel(ChooseBigLevel), banliupai);
+                        int id = VTools.CreateNpcByTypeAndLevel(ChooseType, VTools.BigLevelToLevel(ChooseBigLevel), banliupai);
 
                         if (id >= 0)
                         {
@@ -230,18 +231,15 @@ namespace Ventulus
                     Logger.LogInfo("传音符播报");
 
                     //加入新传音符
-                    VTools.SendOldEmail(CyNPCId, CyNPCId, Broadcast);
+                    VTools.SendOldEmail(CyNPCId, CyNPCId, Broadcast, cycledateTime.ToString());
                 }
                 tempdate = tempdate.AddYears(1);
             }
 
             //退出结算状态
             //NpcJieSuanManager.inst.isCanJieSuan = true;
-            UIPopTip.Inst.Pop("完成人口普查", PopTipIconType.任务完成);
+            //UIPopTip.Inst.Pop("完成人口普查", PopTipIconType.任务完成);
 
-
-            //Logger.LogInfo("委托任务测试");
-            //VTools.SendNTaskEmail(2, 803, "委托任务测试803");
         }
         public void StatisticsPopulation()
         {
@@ -259,7 +257,7 @@ namespace Ventulus
                 TotalPopulation++;
                 if (avatar.HasField("Level"))
                 {
-                    int biglevel = LevelToBigLevel(avatar["Level"].I);
+                    int biglevel = VTools.LevelToBigLevel(avatar["Level"].I);
                     NPCBigLevelStatistics.AddWeight(biglevel);
                 }
 
@@ -270,7 +268,6 @@ namespace Ventulus
                 }
 
             }
-
 
             Logger.LogInfo("统计总人口");
             Logger.LogInfo(TotalPopulation);
@@ -301,25 +298,7 @@ namespace Ventulus
             }
         }
 
-        public static int LevelToBigLevel(int level)
-        {
-            return (level - 1) / 3 + 1;
-        }
-        public static int BigLevelToLevel(int biglevel)
-        {
-            return (biglevel - 1) * 3 + 1;
-        }
-
-        public int CreateNpcByTypeAndLevel(int type, int level, int banliupai = 0)
-        {
-            List<JSONObject> list = jsonData.instance.NPCLeiXingDate.list.Where(x => x["Type"].I == type && x["Level"].I == level && x["LiuPai"].I != banliupai).ToList();
-            if (list.Count > 0)
-            {
-                int j = VTools.GetRandom(0, list.Count);
-                return FactoryManager.inst.npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false);
-            }
-            return 0;
-        }
+        
 
         private static Dictionary<int, string> NPCType = new Dictionary<int, string>()
         {
