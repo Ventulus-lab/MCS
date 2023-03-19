@@ -7,7 +7,7 @@
 （待补充具体方法）
 
 ## VNext
-扩展补充Next模组的[**对话指令**](#vnextdialogevent "VNext.DialogEvent")、[**触发器**](##VNext.DialogTrigger "VNext.DialogTrigger")、[**环境指令(运行时脚本)**](##VNext.DialogEnvQuery "VNext.DialogEnvQuery")，来帮助模组作者们更方便地编写剧情类模组。
+扩展补充Next模组的[**对话指令**](#vnextdialogevent "VNext.DialogEvent")、[**触发器**](#vnextdialogtrigger "VNext.DialogTrigger")、[**环境指令(运行时脚本)**](#vnextdialogenvquery "VNext.DialogEnvQuery")，来帮助模组作者们更方便地编写剧情类模组。
 
 ## VNext.DialogEvent
 **对话指令**
