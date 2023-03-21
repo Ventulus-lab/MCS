@@ -146,7 +146,7 @@ namespace Ventulus
                 DateTime cycledateTime = RecentJune(tempdate);
                 Logger.LogMessage("经过六月份");
                 Logger.LogMessage(cycledateTime.ToString());
-
+                yield return null;
                 //调查人口
                 StatisticsPopulation();
                 string Broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}";
@@ -203,7 +203,7 @@ namespace Ventulus
                         //Logger.LogInfo($"{ChooseBigLevel}{NPCBigLevel[ChooseBigLevel]}+{ChooseType}{NPCType[ChooseType]}");
                         if (ChooseBigLevel <= 0 || ChooseType <= 0) continue;
                         int banliupai = !AllowSpecialLiuPai.Value && TypeBanLiuPai.ContainsKey(ChooseType) ? TypeBanLiuPai[ChooseType] : 0;
-                        int id = VTools.CreateNpcByTypeAndLevel(ChooseType, VTools.BigLevelToLevel(ChooseBigLevel), banliupai);
+                        int id = VTools.CreateNpcByTypeAndLevel(ChooseType, BigLevelToLevel(ChooseBigLevel), banliupai);
 
                         if (id >= 0)
                         {
@@ -224,7 +224,7 @@ namespace Ventulus
                     }
                 }
                 ///
-                yield return null;
+                yield return new WaitForSeconds(1f);
                 //播报人口统计
                 if (StatisticsBroadcast.Value)
                 {
@@ -257,7 +257,7 @@ namespace Ventulus
                 TotalPopulation++;
                 if (avatar.HasField("Level"))
                 {
-                    int biglevel = VTools.LevelToBigLevel(avatar["Level"].I);
+                    int biglevel = LevelToBigLevel(avatar["Level"].I);
                     NPCBigLevelStatistics.AddWeight(biglevel);
                 }
 
@@ -298,7 +298,15 @@ namespace Ventulus
             }
         }
 
-        
+        //大小境界转换
+        public static int LevelToBigLevel(int level)
+        {
+            return (level - 1) / 3 + 1;
+        }
+        public static int BigLevelToLevel(int biglevel)
+        {
+            return (biglevel - 1) * 3 + 1;
+        }
 
         private static Dictionary<int, string> NPCType = new Dictionary<int, string>()
         {
