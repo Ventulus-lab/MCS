@@ -2,6 +2,7 @@
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -231,13 +232,20 @@ namespace Ventulus
             player.emailDateMag.AddNewEmail(contactNpcId.ToString(), emailData);
             return true;
         }
-        //移除传音符联系人
+        //
+        // 摘要:
+        //     移除传音符联系人好友
         public static void RemoveFriend(int npcId)
         {
-            int id = NPCEx.NPCIDToNew(npcId);
-            if (player.emailDateMag.IsFriend(id))
+            npcId = NPCEx.NPCIDToNew(npcId);
+            int oldId= NPCEx.NPCIDToOld(npcId);
+            if (player.emailDateMag.IsFriend(npcId))
             {
-                player.emailDateMag.cyNpcList.Remove(id);
+                player.emailDateMag.cyNpcList.Remove(npcId);
+            }
+            if (player.emailDateMag.cyNpcList.Contains(oldId))
+            {
+                player.emailDateMag.cyNpcList.Remove(oldId);
             }
         }
         //
@@ -265,7 +273,9 @@ namespace Ventulus
             return 0;
         }
     }
-    //权重字典类移动至工具
+    //
+    // 摘要:
+    //     带权重的字典，可根据权重随机选取，可与另一个权重字典正数相减，内部有两个子字典：权重字典和名称字典
     public class WeightDictionary
     {
         public Dictionary<int, double> WeightDict
