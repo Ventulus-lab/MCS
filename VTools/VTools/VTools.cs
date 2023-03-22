@@ -9,7 +9,7 @@ using System.Text;
 namespace Ventulus
 {
     [BepInDependency("skyswordkill.plugin.Next", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.3.0")]
+    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.3.1")]
     public class VTools : BaseUnityPlugin
     {
         void Awake()
@@ -57,9 +57,13 @@ namespace Ventulus
         }
         
         protected static KBEngine.Avatar player => Tools.instance.getPlayer();
-
-        //快速找到当前时间
+        //
+        // 摘要:
+        //     获取DateTime格式的当前时间
         public static DateTime NowTime => player.worldTimeMag.getNowTime();
+        //
+        // 摘要:
+        //     获取字符串格式的当前时间
         public static string nowTime => player.worldTimeMag.nowTime;
 
 
@@ -68,12 +72,17 @@ namespace Ventulus
         {
             return random.Next();
         }
+        //
+        // 摘要:
+        //     返回大于等于min且小于max的随机数
         public static int GetRandom(int min, int max)
         {
             return random.Next(min, max);
         }
 
-        //根据npcId获取姓名
+        //
+        // 摘要:
+        //     根据npcId获取姓名
         public static string GetNPCName(int npcId)
         {
             //一般情情况在AvatarRandomJsonData有，死了在npcDeathJson里记newId，实在不行再AvatarJsonData里找oldId
@@ -95,7 +104,9 @@ namespace Ventulus
             else
                 return "未知";
         }
-        //获取显示的npcId字符串
+        //
+        // 摘要:
+        //     获取用于显示的npcId字符串
         public static string MakeNPCIdStr(int npcId)
         {
             npcId = NPCEx.NPCIDToNew(npcId);
@@ -229,8 +240,9 @@ namespace Ventulus
                 player.emailDateMag.cyNpcList.Remove(id);
             }
         }
-        
-        //最近的某一个月，默认找6月
+        //
+        // 摘要:
+        //     获取接下来最近的某一个月，默认找最近的6月
         public static DateTime RecentMonth(DateTime lastTime, int month = 6)
         {
             DateTime tempTime = new DateTime(lastTime.Year, month, lastTime.Day);
@@ -239,7 +251,9 @@ namespace Ventulus
             else
                 return tempTime;
         }
-        //按类型和境界生成npc
+        //
+        // 摘要:
+        //     按类型和境界生成npc，可选排除特定流派
         public static int CreateNpcByTypeAndLevel(int type, int level, int banLiuPai = 0)
         {
             List<JSONObject> list = jsonData.instance.NPCLeiXingDate.list.Where(x => x["Type"].I == type && x["Level"].I == level && x["LiuPai"].I != banLiuPai).ToList();

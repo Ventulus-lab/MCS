@@ -192,16 +192,7 @@ namespace Ventulus.VNext.DialogEnvQuery
                     context.Env.roleID = npcId;
                     context.Env.roleName = VTools.GetNPCName(findNpc);
                     context.Env.roleBindID = NPCEx.NPCIDToOld(findNpc);
-                    UINPCData npcdata = new UINPCData(npcId);
-                    if (npcId < 20000)
-                    {
-                        npcdata.RefreshOldNpcData();
-                    }
-                    else
-                    {
-                        npcdata.RefreshData();
-                    }
-                    context.Env.bindNpc = npcdata;
+                    context.Env.mapScene = SceneEx.NowSceneName;
                     return true;
                 }
             }

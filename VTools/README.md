@@ -22,20 +22,20 @@
 
 |指令|说明|特点|环境|
 |---|---|---|---|
-| **附近的人**<br>**OnNearNpc** | **必须**把环境脚本`NearNpcContains`作为condition条件之一一起使用，<br>当附近的人改变时触发，通过`NearNpcContains`判定有没有遇到设定的NPC，从而开启剧情事件 | 1.**队列触发器** <br>该类触发器触发的事件会逐项执行<br>2.屏蔽了反复进出空场景刷概率触发，可反复进出有人的场景刷概率触发<br>3.在洞府闭关，过月结算时有npc拜访也能触发 | roleID<br>roleName<br>roleBindID |
+| **附近的人**<br>**OnNearNpc** | **必须**把环境脚本`NearNpcContains`作为condition条件之一一起使用，<br>当附近的人改变时触发，通过`NearNpcContains`判定有没有遇到设定的NPC，从而开启剧情事件 | 1.**队列触发器** <br>该类触发器触发的事件会逐项执行<br>2.屏蔽了反复进出空场景刷概率触发，可反复进出有人的场景刷概率触发<br>3.在洞府闭关，过月结算时有npc拜访也能触发 | 在使用环境脚本`NearNpcContains`作为第一个条件后，以下环境属性可使用<br>roleID<br>roleName<br>roleBindID<br>mapScene |
 
 **范例**
 ``` 
     {
         "id":"遇见倪旭欣",
         "type":"附近的人",
-        "condition":"NearNpcContains(609)",
+        "condition":"NearNpcContains(609) && mapScene==\"S163\"",
         "triggerEvent":"偶遇",
         "default" : true,
         "once" : false
     }
 
-    //当遇到倪旭欣时开启剧情事件
+    //在伴月楼遇到倪旭欣时开启剧情事件，使用NearNpcContains后环境属性mapScene即可使用
 ```
 ``` 
     {
@@ -67,7 +67,7 @@
         ]
     }
 
-    //前面触发器已获得roleName和roleID可直接使用。
+    //前面已获得环境属性roleName可直接使用。
 ```
 
 ## VNext.DialogEnvQuery
@@ -76,4 +76,4 @@
 |指令|说明|特点|范例|
 |---|---|---|---|
 | `string GetNPCName(int NPCid)` | 根据NPCid返回名字，注意大小写 | 除了一般NPC名字外，失联NPC和未绑定的工具人NPC也可以正常获取，1号是玩家名字，0号是"旁白"，如果获取失败则会返回"未知" | `"倪旭欣#我爸是[&GetNPCName(621)&]！"` 倪旭欣说我爸是倪振东 |
-| `bool NearNpcContains(DialogEnvQueryContext context)` | 1.**必须**和触发器**OnNearNpc**一起使用<br>2.第一个参数为触发的npcId，可以是一个数，也可以是一个数组，只要其中任意一个在附近的人中有就能触发<br>3.第二个参数可省略，默认为100，范围从0到100，为百分比概率开启剧情事件<br>4.可以和其他判断条件一起进行布尔运算，最终作为condition | 环境脚本中，数组的表示方式为Array(615, 614,…)注意为英文逗号<br>本环境脚本的npcId参数可兼容一个数字或者一个数组 | `"NearNpcContains(609)"` 当遇到倪旭欣时开启剧情事件 <br> `"NearNpcContains(Array(615, 614),50)"` 当遇到百里奇或者林沐心时有50%概率开启剧情事件|
+| `bool NearNpcContains(DialogEnvQueryContext context)` | 1.**必须**和触发器**OnNearNpc**一起使用<br>2.第一个参数为触发的npcId，可以是一个数，也可以是一个数组，只要其中任意一个在附近的人中有就能触发<br>3.第二个参数可省略，默认为100，范围从0到100，为百分比概率开启剧情事件<br>4.**使用后**会对一些环境属性赋值，可以和其他判断条件一起进行布尔运算，最终作为condition | 环境脚本中，数组的表示方式为Array(615, 614,…)注意为英文逗号<br>本环境脚本的npcId参数可兼容一个数字或者一个数组 | `"NearNpcContains(609)"` 当遇到倪旭欣时开启剧情事件 <br> `"NearNpcContains(Array(615, 614),50)"` 当遇到百里奇或者林沐心时有50%概率开启剧情事件|
