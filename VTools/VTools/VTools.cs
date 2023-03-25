@@ -2,7 +2,6 @@
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,7 +9,7 @@ using System.Text;
 namespace Ventulus
 {
     [BepInDependency("skyswordkill.plugin.Next", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.3.1")]
+    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.4.0")]
     public class VTools : BaseUnityPlugin
     {
         void Awake()
@@ -21,7 +20,7 @@ namespace Ventulus
         void Start()
         {
             new Harmony("Ventulus.MCS.VTools").PatchAll();
-            MessageMag.Instance.Register(MessageName.MSG_GameInitFinish, new Action<MessageData>(this.InitMailSystem));
+            MessageMag.Instance.Register(MessageName.MSG_GameInitFinish, new Action<MessageData>(InitMailSystem));
             Logger.LogInfo("加载成功");
         }
         public static VTools Instance;
@@ -56,34 +55,38 @@ namespace Ventulus
                 jsonData.instance.CyNpcDuiBaiData.SetField(CyDuiBaiId.ToString(), emailJson);
             }
         }
-        
+
         protected static KBEngine.Avatar player => Tools.instance.getPlayer();
-        //
-        // 摘要:
-        //     获取DateTime格式的当前时间
+
+        ///   <summary>  
+        ///   获取DateTime格式的当前时间
+        ///   </summary>
         public static DateTime NowTime => player.worldTimeMag.getNowTime();
-        //
-        // 摘要:
-        //     获取字符串格式的当前时间
+
+        ///   <summary>  
+        ///   获取字符串格式的当前时间
+        ///   </summary>   
         public static string nowTime => player.worldTimeMag.nowTime;
 
-
-        //随机数
+        ///   <summary>  
+        ///   随机数
+        ///   </summary>
         public static int GetRandom()
         {
             return random.Next();
         }
-        //
-        // 摘要:
-        //     返回大于等于min且小于max的随机数
+
+        ///   <summary>  
+        ///   返回大于等于min且小于max的随机数
+        ///   </summary>
         public static int GetRandom(int min, int max)
         {
             return random.Next(min, max);
         }
 
-        //
-        // 摘要:
-        //     根据npcId获取姓名
+        ///   <summary>  
+        ///   根据npcId获取姓名
+        ///   </summary>
         public static string GetNPCName(int npcId)
         {
             //一般情情况在AvatarRandomJsonData有，死了在npcDeathJson里记newId，实在不行再AvatarJsonData里找oldId
@@ -105,9 +108,10 @@ namespace Ventulus
             else
                 return "未知";
         }
-        //
-        // 摘要:
-        //     获取用于显示的npcId字符串
+
+        ///   <summary>  
+        ///   获取用于显示的npcId字符串  
+        ///   </summary>
         public static string MakeNPCIdStr(int npcId)
         {
             npcId = NPCEx.NPCIDToNew(npcId);
@@ -118,6 +122,30 @@ namespace Ventulus
             return str;
         }
 
+        ///   <summary>  
+        ///   获取当前场景名称
+        ///   </summary>
+        public static string GetPlaceName()
+        {
+            string screenName = Tools.getScreenName();
+            if (RandomFuBen.IsInRandomFuBen)
+            {
+                return (string)player.RandomFuBenList[RandomFuBen.NowRanDomFuBenID.ToString()]["Name"];
+            }
+            else if (screenName == "S101")
+            {
+                return DongFuManager.GetDongFuName(DongFuManager.NowDongFuID);
+            }
+            else
+            {
+                if (!jsonData.instance.SceneNameJsonData.HasField(screenName))
+                {
+                    return "未知";
+                }
+                return jsonData.instance.SceneNameJsonData[screenName]["MapName"].Str;
+                //其实本来是EventName场景名称，奈何觅长生比较奇葩，MapName地图名称信息更多，比如四大岛的客栈坊市码头，而五宗门广场编号不同但是没做区分。
+            }
+        }
         //发送任意信息OldEmail，联系人和发信人可不相同，每有一个发信人需占用一个传音符Id，不可携带物品（要携带物品则需要再单独占用传音符Id）。不支持任务
         private static readonly string oldCyFu = @"{""id"":100000,""AvatarID"":1,""info"":""{DiDian}"",""Type"":3,""DelayTime"":[]}";
         public static void SendOldEmail(int contactNpcId, int senderNpcId, string message, string sendTime = "")
@@ -232,13 +260,14 @@ namespace Ventulus
             player.emailDateMag.AddNewEmail(contactNpcId.ToString(), emailData);
             return true;
         }
-        //
-        // 摘要:
-        //     移除传音符联系人好友
+
+        ///   <summary>  
+        ///   移除传音符联系人好友
+        ///   </summary>
         public static void RemoveFriend(int npcId)
         {
             npcId = NPCEx.NPCIDToNew(npcId);
-            int oldId= NPCEx.NPCIDToOld(npcId);
+            int oldId = NPCEx.NPCIDToOld(npcId);
             if (player.emailDateMag.IsFriend(npcId))
             {
                 player.emailDateMag.cyNpcList.Remove(npcId);
@@ -248,9 +277,10 @@ namespace Ventulus
                 player.emailDateMag.cyNpcList.Remove(oldId);
             }
         }
-        //
-        // 摘要:
-        //     获取接下来最近的某一个月，默认找最近的6月
+
+        ///   <summary>  
+        ///   获取接下来最近的某一个月，默认找最近的6月
+        ///   </summary>
         public static DateTime RecentMonth(DateTime lastTime, int month = 6)
         {
             DateTime tempTime = new DateTime(lastTime.Year, month, lastTime.Day);
@@ -259,9 +289,10 @@ namespace Ventulus
             else
                 return tempTime;
         }
-        //
-        // 摘要:
-        //     按类型和境界生成npc，可选排除特定流派
+
+        ///   <summary>  
+        ///   按类型和境界生成npc，可选排除特定流派
+        ///   </summary>  
         public static int CreateNpcByTypeAndLevel(int type, int level, int banLiuPai = 0)
         {
             List<JSONObject> list = jsonData.instance.NPCLeiXingDate.list.Where(x => x["Type"].I == type && x["Level"].I == level && x["LiuPai"].I != banLiuPai).ToList();
@@ -273,9 +304,9 @@ namespace Ventulus
             return 0;
         }
     }
-    //
-    // 摘要:
-    //     带权重的字典，可根据权重随机选取，可与另一个权重字典正数相减，内部有两个子字典：权重字典和名称字典
+    ///   <summary>  
+    ///   带权重的字典  
+    ///   </summary>
     public class WeightDictionary
     {
         public Dictionary<int, double> WeightDict

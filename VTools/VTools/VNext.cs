@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using GetWay;
+using HarmonyLib;
 using SkySwordKill.Next.DialogEvent;
 using SkySwordKill.Next.DialogSystem;
 using System;
@@ -58,6 +59,19 @@ namespace Ventulus.VNext.DialogEvent
             callback?.Invoke();
         }
     }
+
+    [DialogEvent("AddShengWang")]
+    public class AddShengWang : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int id = command.GetInt(0);
+            int add = command.GetInt(1);
+
+            PlayerEx.AddShengWang(id, add, true);
+            callback?.Invoke();
+        }
+    }
 }
 
 //触发器
@@ -101,8 +115,8 @@ namespace Ventulus.VNext.DialogTrigger
             newNpcList.AddRange(UINPCJiaoHu.Inst.TNPCIDList);
             newNpcList.AddRange(UINPCJiaoHu.Inst.NPCIDList);
             newNpcList.AddRange(UINPCJiaoHu.Inst.SeaNPCIDList);
-            VTools.LogMessage("lastNearNpcCount" + lastNpcList.Count);
-            VTools.LogMessage("newNearNpcCount" + newNpcList.Count);
+            //VTools.LogMessage("lastNearNpcCount" + lastNpcList.Count);
+            //VTools.LogMessage("newNearNpcCount" + newNpcList.Count);
 
             if (newNpcList.Count == 0)
                 return;
@@ -125,6 +139,64 @@ namespace Ventulus.VNext.DialogTrigger
             }, env, true);
         }
 
+    }
+
+    [HarmonyPatch]
+    class AllMapMove
+    {
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MapComponent), nameof(MapComponent.NewMovaAvatar))]
+        public static bool NewMovaAvatar_Prefix()
+        {
+            //VTools.LogMessage("MapComponent.NewMovaAvatar_Prefix");
+            //屏蔽多次点击实际小人在移动中
+            if (AllMapManage.instance.isPlayMove)
+                return true;
+
+            DialogEnvironment env = new DialogEnvironment();
+
+            if (DialogAnalysis.TryTrigger(new string[]
+            {
+                "大地图移动前",
+                "BeforeAllMapMove"
+            }, env, false))
+            {
+                MapGetWay.Inst.IsStop = true;
+                return false;
+            }
+            else
+                return true;
+
+
+        }
+
+    }
+
+    [HarmonyPatch]
+    class FubenMove
+    {
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MapInstComport), nameof(MapInstComport.AvatarMoveToThis))]
+        public static bool AvatarMoveToThis_Prefix()
+        {
+
+           // VTools.LogMessage("MapInstComport.AvatarMoveToThis_Prefix");
+
+            DialogEnvironment env = new DialogEnvironment();
+
+            if (DialogAnalysis.TryTrigger(new string[]
+            {
+                "副本移动前",
+                "BeforeFubenMove"
+            }, env, false))
+            {
+                return false;
+            }
+            else
+                return true;
+        }
 
     }
 }
@@ -185,7 +257,7 @@ namespace Ventulus.VNext.DialogEnvQuery
                 //概率触发
                 int randomNum = context.Args.Length > 1 ? context.GetArg(1, 100) : 100;
                 int roll = VTools.GetRandom(0, 100);
-                VTools.LogInfo($"Roll {roll}/{randomNum}");
+                //VTools.LogInfo($"Roll {roll}/{randomNum}");
                 if (roll < randomNum)
                 {
                     int npcId = NPCEx.NPCIDToNew(findNpc);
@@ -197,6 +269,47 @@ namespace Ventulus.VNext.DialogEnvQuery
                 }
             }
             return false;
+        }
+
+    }
+
+    [DialogEnvQuery("RandomProbability")]
+    public class RandomProbability : IDialogEnvQuery
+    {
+        public object Execute(DialogEnvQueryContext context)
+        {
+            int randomNum = context.GetArg<int>(0, 100);
+            int roll = VTools.GetRandom(0, 100);
+            //VTools.LogInfo($"Roll {roll}/{randomNum}");
+            return roll < randomNum;
+        }
+    }
+
+    [DialogEnvQuery("GetCurFubenIndex")]
+    public class GetCurFubenIndex : IDialogEnvQuery
+    {
+        public object Execute(DialogEnvQueryContext context)
+        {
+            return PlayerEx.Player.fubenContorl[Tools.getScreenName()].NowIndex;
+        }
+    }
+
+    [DialogEnvQuery("GetPlaceName")]
+    public class GetPlaceName : IDialogEnvQuery
+    {
+        public object Execute(DialogEnvQueryContext context)
+        {
+            return VTools.GetPlaceName();
+        }
+    }
+
+    [DialogEnvQuery("GetShengWang")]
+    public class GetShengWang : IDialogEnvQuery
+    {
+        public object Execute(DialogEnvQueryContext context)
+        {
+            int id = context.GetArg(0, 0);
+            return PlayerEx.GetShengWang(id);
         }
     }
 }
