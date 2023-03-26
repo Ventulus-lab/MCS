@@ -24,7 +24,7 @@ using UnityEngine.UI;
 namespace Ventulus
 {
     [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.1.1")]
+    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.1.2")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
         void Awake()
@@ -126,7 +126,7 @@ namespace Ventulus
         {
             //UIPopTip.Inst.Pop("开始人口普查", PopTipIconType.任务进度);
             //等待一秒
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(0.5f);
             
             AddCyNPC(LastJieSuanTime);
             DateTime nowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
@@ -271,21 +271,6 @@ namespace Ventulus
             Logger.LogInfo("目标人数");
             Logger.LogInfo((int)TargetPopulation.Value);
 
-        }
-        //官方bug，暂时帮忙修复下
-        [HarmonyPatch(typeof(KillSystem.Killer.Killer_Factory))]
-        class KillSystem_Killer_Killer_Factory_Patch
-        {
-            [HarmonyPrefix]
-            [HarmonyPatch("GetRandomDaiHao")]
-            public static bool GetRandomDaiHao_Prefix(ref string __result)
-            {
-                int randomInt = Tools.instance.GetRandomInt(0, KillerDaiHaoData.DataDict.Count - 1);
-                //DataList的序号是0-24，DataDict的键是1-25
-                Instance.Logger.LogInfo("修复官方杀手bug");
-                __result = KillerDaiHaoData.DataList[randomInt].Name;
-                return false;
-            }
         }
 
         //大小境界转换

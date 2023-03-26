@@ -1,10 +1,12 @@
 ﻿using BepInEx;
 using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using UnityEngine;
 
 namespace Ventulus
 {
@@ -21,6 +23,7 @@ namespace Ventulus
         {
             new Harmony("Ventulus.MCS.VTools").PatchAll();
             MessageMag.Instance.Register(MessageName.MSG_GameInitFinish, new Action<MessageData>(InitMailSystem));
+            MessageMag.Instance.Register(MessageName.MSG_Npc_JieSuan_COMPLETE, new Action<MessageData>(JieSuanComplete));
             Logger.LogInfo("加载成功");
         }
         public static VTools Instance;
@@ -54,6 +57,17 @@ namespace Ventulus
                 JSONObject emailJson = new JSONObject(newCyDuiBai);
                 jsonData.instance.CyNpcDuiBaiData.SetField(CyDuiBaiId.ToString(), emailJson);
             }
+        }
+        public void JieSuanComplete(MessageData data = null)
+        {
+            VTools.LogMessage("结算完成了");
+            StartCoroutine(AfterJieSuan());
+        }
+        IEnumerator AfterJieSuan()
+        {
+            VTools.LogMessage("开始协程");
+            yield return new WaitForSeconds(2f);
+            VNext.DialogTrigger.OnJieSuanComplete.CallTrigger();
         }
 
         protected static KBEngine.Avatar player => Tools.instance.getPlayer();

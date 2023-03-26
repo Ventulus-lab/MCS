@@ -78,7 +78,7 @@ namespace Ventulus.VNext.DialogEvent
 namespace Ventulus.VNext.DialogTrigger
 {
     [HarmonyPatch]
-    class NearNpc
+    public class NearNpc
     {
 
         private static bool bRefreshed = false;
@@ -91,14 +91,6 @@ namespace Ventulus.VNext.DialogTrigger
             //VTools.LogInfo("UINPCJiaoHu.RefreshNowMapNPC");
             bRefreshed = true;
         }
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(ThreeSceneMag), nameof(ThreeSceneMag.init))]
-        public static void init_Postfix()
-        {
-            //VTools.LogInfo("ThreeSceneMag.init");
-
-        }
-
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(UINPCLeftList), nameof(UINPCLeftList.RefreshNPC))]
@@ -142,7 +134,7 @@ namespace Ventulus.VNext.DialogTrigger
     }
 
     [HarmonyPatch]
-    class AllMapMove
+    public class AllMapMove
     {
 
         [HarmonyPrefix]
@@ -174,7 +166,7 @@ namespace Ventulus.VNext.DialogTrigger
     }
 
     [HarmonyPatch]
-    class FubenMove
+    public class FubenMove
     {
 
         [HarmonyPrefix]
@@ -182,7 +174,7 @@ namespace Ventulus.VNext.DialogTrigger
         public static bool AvatarMoveToThis_Prefix()
         {
 
-           // VTools.LogMessage("MapInstComport.AvatarMoveToThis_Prefix");
+            // VTools.LogMessage("MapInstComport.AvatarMoveToThis_Prefix");
 
             DialogEnvironment env = new DialogEnvironment();
 
@@ -199,6 +191,26 @@ namespace Ventulus.VNext.DialogTrigger
         }
 
     }
+
+    //接收消息需要MonoBehaviour基类，要延迟，Invoke和Corutine都需要实例，不能是静态
+    public class OnJieSuanComplete
+    {
+
+        public static void CallTrigger()
+        {
+            VTools.LogMessage("调用触发函数成功");
+            DialogEnvironment env = new DialogEnvironment();
+
+            bool re = DialogAnalysis.TryTrigger(new string[]
+            {
+                "结算完成",
+                "OnJieSuanComplete"
+            }, env, true);
+
+            VTools.LogMessage("调用触发器结果" + re.ToString());
+        }
+    }
+
 }
 
 //环境脚本
