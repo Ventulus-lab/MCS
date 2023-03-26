@@ -136,7 +136,7 @@ namespace Ventulus
             {
                 Logger.LogMessage("经过六月份");
                 Logger.LogMessage(cycleJuneDate.ToString());
-                yield return null;
+                //yield return null;
                 //调查人口
                 StatisticsPopulation();
                 string broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}";
@@ -150,7 +150,7 @@ namespace Ventulus
                 {
 
                     ///
-                    yield return null;
+                    //yield return null;
                     //计算比例
                     if (cycleJuneDate >= new DateTime(300, 1, 1))
                     {
@@ -205,7 +205,7 @@ namespace Ventulus
                             Logger.LogInfo($"{chooseBigLevel}{NPCBigLevel[chooseBigLevel]}+{chooseType}{NPCType[chooseType]} =Fail");
                         }
                         ///
-                        yield return null;
+                        //yield return null;
                     }
                     Logger.LogMessage("实际造人" + createNum);
                     if (createNum > 0)

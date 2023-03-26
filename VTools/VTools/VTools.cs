@@ -65,9 +65,9 @@ namespace Ventulus
         }
         IEnumerator AfterJieSuan()
         {
-            VTools.LogMessage("开始协程");
-            yield return new WaitForSeconds(2f);
-            VNext.DialogTrigger.OnJieSuanComplete.CallTrigger();
+            //VTools.LogMessage("开始协程");
+            yield return new WaitForSeconds(1.5f);
+            VNext.DialogTrigger.JieSuanComplete.CallTrigger();
         }
 
         protected static KBEngine.Avatar player => Tools.instance.getPlayer();
@@ -313,10 +313,125 @@ namespace Ventulus
             if (list.Count > 0)
             {
                 int j = VTools.GetRandom(0, list.Count);
-                return FactoryManager.inst.npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false);
+                return FactoryManager.inst.npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false, importantJson: null);
             }
             return 0;
         }
+        ///   <summary>  
+        ///   按条件生成npc，不强制要求的参数写成0，结果为id
+        ///   </summary>  
+        public static int CreateNpc(int type = 0, int liuPai = 0, int level = 0, int sex = 0, int zhengXie = 0)
+        {
+            List<JSONObject> list = jsonData.instance.NPCLeiXingDate.list;
+            if (type > 0)
+                list = list.Where(x => x["Type"].I == type).ToList();
+            if (liuPai > 0)
+                list = list.Where(x => x["LiuPai"].I == liuPai).ToList();
+            if (level > 0)
+                list = list.Where(x => x["Level"].I == level).ToList();
+            if (list.Count > 0)
+            {
+                int j = VTools.GetRandom(0, list.Count);
+                int result = FactoryManager.inst.npcFactory.AfterCreateNpc(list[j], isImportant: false, ZhiDingindex: 0, isNewPlayer: false, importantJson: null, setSex: sex);
+                if (zhengXie == 1 || zhengXie == 2)
+                {
+                    int xingGe = FactoryManager.inst.npcFactory.getRandomXingGe(zhengXie);
+                    jsonData.instance.AvatarJsonData[result.ToString()].SetField("XingGe", xingGe);
+                }
+                LogMessage("CreateNpc id" + result.ToString());
+                return result;
+            }
+            LogMessage("CreateNpc Fail");
+            return 0;
+        }
+
+        ///   <summary>  
+        ///   按条件筛选npc，不强制要求的参数写成0，结果为id列表
+        ///   </summary>  
+        public static List<int> SearchNpc(int type = 0, int liuPai = 0, int level = 0, int sex = 0, int zhengXie = 0)
+        {
+            //LogMessage("SearchNpc tiaojian " + type + liuPai + level + sex + zhengXie);
+            List<JSONObject> list = jsonData.instance.AvatarJsonData.list.Where(x => x["id"].I >= 20000 && !x.HasField("IsFly")).ToList();
+            if (type > 0)
+                list = list.Where(x => x["Type"].I == type).ToList();
+            if (liuPai > 0)
+                list = list.Where(x => x["LiuPai"].I == liuPai).ToList();
+            if (level > 0)
+                list = list.Where(x => x["Level"].I == level).ToList();
+            if (sex > 0)
+                list = list.Where(x => x["SexType"].I == sex).ToList();
+            if (zhengXie == 1)
+                list = list.Where(x => x["XingGe"].I < 10).ToList();
+            if (zhengXie == 2)
+                list = list.Where(x => x["XingGe"].I > 10).ToList();
+            LogMessage("SearchNpc num" + list.Count);
+            return list.Select(x => x["id"].I).ToList();
+        }
+
+        ///   <summary>  
+        ///   npc执行行动，会改变行动id，地点，获得行动报酬
+        ///   </summary>  
+        public static bool NpcDoAction(int npcId, int actionId)
+        {
+            npcId = NPCEx.NPCIDToNew(npcId);
+            if (npcId < 20000) return false;
+            if (NpcJieSuanManager.inst.ActionDictionary.ContainsKey(actionId))
+            {
+                NpcMapRemoveNpc(npcId);
+                jsonData.instance.AvatarJsonData[npcId.ToString()].SetField("ActionId", actionId);
+                NpcJieSuanManager.inst.ActionDictionary[actionId](npcId);
+                NpcJieSuanManager.inst.isUpDateNpcList = true;
+                return true;
+            }
+            return false;
+        }
+        ///   <summary>  
+        ///   移除地图上特定npc
+        ///   </summary> 
+        public static bool NpcMapRemoveNpc(int npcId)
+        {
+            bool removed = false;
+            //地点在副本
+            foreach (Dictionary<int, List<int>> fubendict in NpcJieSuanManager.inst.npcMap.fuBenNPCDictionary.Values)
+            {
+                foreach (List<int> posdict in fubendict.Values)
+                {
+                    if (posdict.Contains(npcId))
+                    {
+                        posdict.Remove(npcId);
+                        removed = true;
+                    }
+                }
+            }
+
+
+            //地点在大地图
+            foreach (List<int> ludiandict in NpcJieSuanManager.inst.npcMap.bigMapNPCDictionary.Values)
+            {
+                if (ludiandict.Contains(npcId))
+                {
+                    ludiandict.Remove(npcId);
+                    removed = true;
+                }
+
+            }
+
+
+            //地点在三级场景
+            foreach (List<int> threedict in NpcJieSuanManager.inst.npcMap.threeSenceNPCDictionary.Values)
+            {
+                if (threedict.Contains(npcId))
+                {
+                    threedict.Remove(npcId);
+                    removed = true;
+                }
+
+            }
+            //刷新玩家当前所在场景的npc
+            NpcJieSuanManager.inst.isUpDateNpcList = true;
+            return removed;
+        }
+
     }
     ///   <summary>  
     ///   带权重的字典  

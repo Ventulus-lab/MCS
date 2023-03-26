@@ -55,7 +55,9 @@ namespace Ventulus.VNext.DialogEvent
             string sendTime = command.ParamList.Length > 3 ? command.GetStr(3) : string.Empty;
             bool reset = command.ParamList.Length > 4 ? command.GetBool(4) : false;
 
-            VTools.SendNTaskEmail(contactNpcId, nTaskId, message, sendTime, reset);
+            bool result = VTools.SendNTaskEmail(contactNpcId, nTaskId, message, sendTime, reset);
+            env.tmpArgs.Remove("SendNTaskEmail");
+            env.tmpArgs.Add("SendNTaskEmail", Convert.ToInt32(result));
             callback?.Invoke();
         }
     }
@@ -72,6 +74,72 @@ namespace Ventulus.VNext.DialogEvent
             callback?.Invoke();
         }
     }
+
+
+    [DialogEvent("CreateOneNpc")]
+    public class CreateOneNpc : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int length = command.ParamList.Length;
+            int type = length > 0 && command.GetStr(0) != "" ? command.GetInt(0) : 0;
+            int liuPai = length > 1 && command.GetStr(1) != "" ? command.GetInt(1) : 0;
+            int level = length > 2 && command.GetStr(2) != "" ? command.GetInt(2) : 0;
+            int sex = length > 3 && command.GetStr(3) != "" ? command.GetInt(3) : 0;
+            int zhengXie = length > 4 && command.GetStr(4) != "" ? command.GetInt(4) : 0;
+
+            int npcId = VTools.CreateNpc(type, liuPai, level, sex, zhengXie);
+            env.roleID = npcId;
+            env.roleName = VTools.GetNPCName(npcId);
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("SearchOneNpc")]
+    public class SearchOneNpc : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int length = command.ParamList.Length;
+            int type = length > 0 && command.GetStr(0) != "" ? command.GetInt(0) : 0;
+            int liuPai = length > 1 && command.GetStr(1) != "" ? command.GetInt(1) : 0;
+            int level = length > 2 && command.GetStr(2) != "" ? command.GetInt(2) : 0;
+            int sex = length > 3 && command.GetStr(3) != "" ? command.GetInt(3) : 0;
+            int zhengXie = length > 4 && command.GetStr(4) != "" ? command.GetInt(4) : 0;
+
+            List<int> list = VTools.SearchNpc(type, liuPai, level, sex, zhengXie);
+            if (list.Count > 0)
+            {
+                int j = VTools.GetRandom(0, list.Count);
+                int npcId = list[j];
+                env.roleID = npcId;
+                env.roleName = VTools.GetNPCName(npcId);
+            }
+            else
+            {
+                int npcId = 0;
+                env.roleID = npcId;
+                env.roleName = VTools.GetNPCName(npcId);
+            }
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("NpcDoAction")]
+    public class NpcDoAction : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int npcId = command.GetInt(0);
+            int actionId = command.GetInt(1);
+
+            bool result = VTools.NpcDoAction(npcId, actionId);
+            env.tmpArgs.Remove("NpcDoAction");
+            env.tmpArgs.Add("NpcDoAction", Convert.ToInt32(result));
+            callback?.Invoke();
+        }
+    }
+
 }
 
 //触发器
@@ -192,22 +260,20 @@ namespace Ventulus.VNext.DialogTrigger
 
     }
 
-    //接收消息需要MonoBehaviour基类，要延迟，Invoke和Corutine都需要实例，不能是静态
-    public class OnJieSuanComplete
+    //通过VTools中相关函数来调用
+    public class JieSuanComplete
     {
-
         public static void CallTrigger()
         {
-            VTools.LogMessage("调用触发函数成功");
+            VTools.LogMessage("调用触发函数");
             DialogEnvironment env = new DialogEnvironment();
 
-            bool re = DialogAnalysis.TryTrigger(new string[]
+            DialogAnalysis.TryTrigger(new string[]
             {
                 "结算完成",
                 "OnJieSuanComplete"
             }, env, true);
 
-            VTools.LogMessage("调用触发器结果" + re.ToString());
         }
     }
 
