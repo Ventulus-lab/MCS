@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Ventulus
 {
     [BepInDependency("skyswordkill.plugin.Next", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.4.0")]
+    [BepInPlugin("Ventulus.MCS.VTools", "微风的工具库", "1.5.0")]
     public class VTools : BaseUnityPlugin
     {
         void Awake()
