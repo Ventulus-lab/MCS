@@ -590,8 +590,8 @@ namespace Ventulus
         private static Dictionary<string, int> SeaZuoBiao = new Dictionary<string, int>()
         {
             {"Sea2",200},//北宁海
-            {"Sea3",189},//西宁海
-            {"Sea4",1929},//南宁海
+            {"Sea3",1111},//西宁海
+            {"Sea4",2200},//南宁海
             {"Sea5",3217},//千流海域
             {"Sea6",6976},//南崖海域
             {"Sea7",5142},//碎星海域

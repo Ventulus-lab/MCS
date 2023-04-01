@@ -1,30 +1,17 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.Logging;
-using Fungus;
-using GUIPackage;
 using HarmonyLib;
-using JSONClass;
-using KBEngine;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using PaiMai;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 
 namespace Ventulus
 {
     [BepInDependency("Ventulus.MCS.VTools", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.1.2")]
+    [BepInPlugin("Ventulus.MCS.PopulationDynamicsAdjustment", "修仙人口动态调整", "1.1.3")]
     public class PopulationDynamicsAdjustment : BaseUnityPlugin
     {
         void Awake()
@@ -37,7 +24,7 @@ namespace Ventulus
         void Start()
         {
             new Harmony("Ventulus.MCS.PopulationDynamicsAdjustment").PatchAll();
-            MessageMag.Instance.Register(MessageName.MSG_Npc_JieSuan_COMPLETE, new Action<MessageData>(this.AfterJieSuanStatistics));
+            MessageMag.Instance.Register(MessageName.MSG_Npc_JieSuan_COMPLETE, new Action<MessageData>(AfterJieSuanStatistics));
 
             Logger.LogInfo("加载成功");
         }
@@ -120,23 +107,23 @@ namespace Ventulus
                 VTools.RemoveFriend(CyNPCId);
             }
         }
-  
+
 
         IEnumerator AdjustPopulation()
         {
             //UIPopTip.Inst.Pop("开始人口普查", PopTipIconType.任务进度);
             //等待一秒
             yield return new WaitForSeconds(1f);
-            
+
             AddCyNPC(LastJieSuanTime);
             DateTime nowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
             DateTime cycleJuneDate = VTools.RecentMonth(LastJieSuanTime, 6);
-            
+
             while (nowJieSuanTime > cycleJuneDate)
             {
                 Logger.LogMessage("经过六月份");
                 Logger.LogMessage(cycleJuneDate.ToString());
-                //yield return null;
+                yield return null;
                 //调查人口
                 StatisticsPopulation();
                 string broadcast = $"此方天地共有修士{TotalPopulation}人。{Environment.NewLine}按修为境界分：{NPCBigLevelStatistics}{Environment.NewLine}按类型分：{NPCTypeStatistics}";
@@ -241,8 +228,9 @@ namespace Ventulus
 
             foreach (JSONObject avatar in jsonData.instance.AvatarJsonData.list)
             {
-                int id = avatar.GetInt("id");
-                if (id < 20000) continue;
+                int npcId = avatar.GetInt("id");
+                if (npcId < 20000) continue;
+                if (NpcJieSuanManager.inst.IsDeath(npcId) || NpcJieSuanManager.inst.IsFly(npcId)) continue;
 
                 TotalPopulation++;
                 if (avatar.HasField("Level"))
