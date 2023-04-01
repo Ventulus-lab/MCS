@@ -509,6 +509,16 @@ namespace Ventulus.VNext.DialogEnvQuery
         }
     }
 
+    [DialogEnvQuery("GetCurAllMapIndex")]
+    public class GetCurAllMapIndex : IDialogEnvQuery
+    {
+        public object Execute(DialogEnvQueryContext context)
+        {
+ 
+            return PlayerEx.Player.NowMapIndex;
+        }
+    }
+
     [DialogEnvQuery("GetPlaceName")]
     public class GetPlaceName : IDialogEnvQuery
     {

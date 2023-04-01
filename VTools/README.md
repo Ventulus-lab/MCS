@@ -193,7 +193,8 @@
 | `string GetNPCName(int npcId)` | 根据npcId返回名字，注意大小写 | 除了一般NPC名字外，失联NPC和未绑定的工具人NPC也可以正常获取，1号是玩家名字，0号是"旁白"，如果获取失败则会返回"未知" | `"倪旭欣#我爸是[&GetNPCName(621)&]！"` 倪旭欣说我爸是倪振东 |
 | `bool NearNpcContains(DialogEnvQueryContext context)` | 1.**必须**和触发器**OnNearNpc**一起使用<br>2.第一个参数为触发的npcId，可以是一个数，也可以是一个数组，只要其中任意一个在附近的人中有就能触发<br>3.第二个参数可省略，默认为100，范围从0到100，为百分比概率开启剧情事件<br>4.**使用后**会对一些环境属性赋值，可以和其他判断条件一起进行布尔运算，最终作为condition | 环境脚本中，数组的表示方式为Array(615, 614,…)注意为英文逗号<br>本环境脚本的npcId参数可兼容一个数字或者一个数组 | `"NearNpcContains(609)"` 当遇到倪旭欣时开启剧情事件 <br> `"NearNpcContains(Array(615, 614),50)"` 当遇到百里奇或者林沐心时有50%概率开启剧情事件|
 | `bool RandomProbability(int roll)` | 按参数百分比概率，随机返回布尔结果 | 参数范围0~100的整数 | `RandomProbability(20)` 有20%的概率返回为真 |
-| `int GetCurFubenIndex()` | 获取玩家在副本中的位置 | **仅当玩家在副本中才有效** | `"主角#我在[&GetPlaceName()&]副本第[&GetCurFubenIndex()&]位置发现了什么"`  |
+| `int GetCurFubenIndex()` | 获取玩家在副本中的位置 | 1.**仅当玩家在副本中才有效**<br>2.海上也是副本 | `"主角#我在[&GetPlaceName()&]副本第[&GetCurFubenIndex()&]位置发现了什么"`  |
+| `int GetCurAllMapIndex()` | 获取玩家在大地图中的位置 | 1.和原版Next的环境脚本`string GetCurMapRoad()`相比，区别仅在于本脚本返回的是数字 |  |
 | `int GetPlaceName()` | 获取玩家所在场景名称 | 相较于`GetSceneName(GetCurScene())`脚本，本环境脚本还能正确获取随机副本、玩家洞府的名称 | `"主角#我在[&GetPlaceName()&]副本第[&GetCurFubenIndex()&]位置发现了什么"` |
 | `int GetShengWang(int id)` | 根据势力id返回声望 | 势力id可在配置表《str》"@势力好感度名称表"表中查询 | `"主角#我在宁州的声望是[&GetShengWang(0)&]！"` 主角自语宁州的声望 |
 | `bool PlayerHasDongFu(int dongFuID)` | 返回玩家是否已有此id的洞府 | 1.逸风城购买洞府id为1，门派金丹赠送后山洞府为2 | `"If*[&PlayerHasDongFu(1)&]#Say*主角#我已在逸风城购买洞府"` 主角自语宁州的声望 |

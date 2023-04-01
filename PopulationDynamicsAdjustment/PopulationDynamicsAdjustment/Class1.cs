@@ -126,7 +126,7 @@ namespace Ventulus
         {
             //UIPopTip.Inst.Pop("开始人口普查", PopTipIconType.任务进度);
             //等待一秒
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(1f);
             
             AddCyNPC(LastJieSuanTime);
             DateTime nowJieSuanTime = DateTime.Parse(NpcJieSuanManager.inst.JieSuanTime);
@@ -150,7 +150,7 @@ namespace Ventulus
                 {
 
                     ///
-                    //yield return null;
+                    yield return null;
                     //计算比例
                     if (cycleJuneDate >= new DateTime(300, 1, 1))
                     {
