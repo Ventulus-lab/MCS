@@ -1,4 +1,5 @@
-﻿using GetWay;
+﻿using Fungus;
+using GetWay;
 using HarmonyLib;
 using SkySwordKill.Next.DialogEvent;
 using SkySwordKill.Next.DialogSystem;
@@ -140,6 +141,140 @@ namespace Ventulus.VNext.DialogEvent
         }
     }
 
+    [DialogEvent("NpcMapRemoveNpc")]
+    public class NpcMapRemoveNpc : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int npcId = command.GetInt(0);
+
+            bool result = VTools.NpcMapRemoveNpc(npcId);
+            env.tmpArgs.Remove("NpcMapRemoveNpc");
+            env.tmpArgs.Add("NpcMapRemoveNpc", Convert.ToInt32(result));
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("CreateDongFu")]
+    public class CreateDongFu : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int dongFuID = command.GetInt(0);
+            int level = command.GetInt(1);
+
+            DongFuManager.CreateDongFu(dongFuID, level);
+
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("SetDongFuName")]
+    public class SetDongFuName : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int dongFuID = command.GetInt(0);
+            string name = command.GetStr(1);
+
+            DongFuManager.SetDongFuName(dongFuID, name);
+
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("SetNowDongFuID")]
+    public class SetNowDongFuID : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int dongFuID = command.GetInt(0);
+            if (!DongFuManager.PlayerHasDongFu(dongFuID))
+                dongFuID = 1;
+            DongFuManager.NowDongFuID = dongFuID;
+
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("NpcWarp")]
+    public class NpcWarp : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            int npcId = command.GetInt(0);
+            string scene = command.GetStr(1);
+            int index = command.ParamList.Length > 2 && command.GetStr(2) != "" ? command.GetInt(2) : 0;
+
+            bool result = VTools.NpcWarp(npcId, scene, index);
+            env.tmpArgs.Remove("NpcWarp");
+            env.tmpArgs.Add("NpcWarp", Convert.ToInt32(result));
+
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("PlayerWarp")]
+    public class PlayerWarp : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            string scene = command.GetStr(0);
+            int index = command.ParamList.Length > 1 && command.GetStr(1) != "" ? command.GetInt(1) : 0;
+
+            bool result = VTools.PlayerWarp(scene, index);
+            env.mapScene = SceneEx.NowSceneName;
+
+            env.tmpArgs.Remove("PlayerWarp");
+            env.tmpArgs.Add("PlayerWarp", Convert.ToInt32(result));
+
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("PlayerMove")]
+    public class PlayerMove : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            //在大地图和副本和海上都有效，注意Index可用范围差异较大
+            int index = command.GetInt(0);
+            AvatarTransfer.Do(index);
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("PlayerWalk")]
+    public class PlayerWalk : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            //仅大地图生效
+            if (Tools.getScreenName() != "AllMaps")
+                return;
+            int index = command.GetInt(0);
+            AllMapManage.instance.mapIndex[index].movaAvatar();
+            PlayerEx.Player.NowMapIndex = index;
+            callback?.Invoke();
+        }
+    }
+
+    [DialogEvent("PlayerGetInRandomFuBen")]
+    public class PlayerGetInRandomFuBen : IDialogEvent
+    {
+        public void Execute(DialogCommand command, DialogEnvironment env, Action callback)
+        {
+            //设定随机副本id可在《EndlessSea》@随机副本表 查询
+            int fuBenId = command.GetInt(0);
+            PlayerEx.Player.randomFuBenMag.GetInRandomFuBen(fuBenId);
+            //此处赋予的是uuid，若要查随机副本原型id可用player.NowRandomFuBenID，若要查随机出的名字，可用VTools.GetPlaceName();
+            env.mapScene = Tools.getScreenName();
+
+            callback?.Invoke();
+        }
+    }
+
+    
 }
 
 //触发器
@@ -368,6 +503,8 @@ namespace Ventulus.VNext.DialogEnvQuery
     {
         public object Execute(DialogEnvQueryContext context)
         {
+            if (PlayerEx.Player.NowFuBen == "" && !RandomFuBen.IsInRandomFuBen)
+                return 0;
             return PlayerEx.Player.fubenContorl[Tools.getScreenName()].NowIndex;
         }
     }
@@ -390,4 +527,16 @@ namespace Ventulus.VNext.DialogEnvQuery
             return PlayerEx.GetShengWang(id);
         }
     }
+
+    [DialogEnvQuery("PlayerHasDongFu")]
+    public class PlayerHasDongFu : IDialogEnvQuery
+    {
+        public object Execute(DialogEnvQueryContext context)
+        {
+            int dongFuID = context.GetArg(0, 0);
+            return DongFuManager.PlayerHasDongFu(dongFuID);
+        }
+    }
+
+
 }

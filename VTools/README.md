@@ -3,7 +3,7 @@
 
 ## VTools
 对于C#模组，可以直接调用VTools的方法。<br>
-（待补充具体方法）
+（相信你知道怎么看）
 
 ## VNext
 扩展补充Next模组的[**对话指令**](#vnextdialogevent "VNext.DialogEvent")、[**触发器**](#vnextdialogtrigger "VNext.DialogTrigger")、[**环境脚本**](#vnextdialogenvquery "VNext.DialogEnvQuery")，来帮助模组作者们更方便地编写剧情类模组。
@@ -20,16 +20,28 @@
 | **CreateOneNpc**<br>`CreateOneNpc*类型#流派#境界#性别#正邪`| 1.所有参数为可选值，若不指定就留空或者写0 <br>2.类型、流派、境界可在配置表《AvatarAI》@NPC类型表中查询 <br>3.**若表中模板筛选出来没有一条全条件都符合的，则会创建失败** <br>4.性别0表示不指定性别，1男2女，类型3星河会强制设为女 <br>5.正邪0表示不指定，1正2邪  | 1.可任意组合你要指定的条件 <br>2.创建成功后，环境属性roleID、roleName即为创建出来的npc <br>3.若创建失败，环境属性roleID会变成0 | `"CreateOneNpc*#33#6#2#1"` 创造了一个离火化焰流派筑基后期正性格的女修士 <br>`"CreateOneNpc*14#0#8#0#2"` 创造一个禾山道金丹中期邪性格修士  |
 | **SearchOneNpc**<br>`SearchOneNpc*类型#流派#境界#性别#正邪`| 1.所有参数为可选值，若不指定就留空或者写0 <br>2.类型、流派、境界可在配置表《AvatarAI》@NPC类型表中查询 <br>3.**若已有NPC中筛选出来没有一条全条件都符合的，则会筛选失败** <br>4.性别0表示不指定性别，1男2女 <br>5.正邪0表示不指定，1正2邪 <br>6.筛选已有npc仅包括实例NPC，**不包括已飞升和已失联的npc** | 1.可任意组合你要指定的条件 <br>2.筛选成功后，**本对话指令只会返回其中随机一个结果**，环境属性roleID、roleName即为筛选出来的npc <br>3.若筛选失败，环境属性roleID会变成0 | `"CreateOneNpc*#33#6#2#1"` 随机选择一个离火化焰流派筑基后期正性格的女修士 <br>`"SearchOneNpc*11##1##1"` 随机选择一个白帝楼类型炼气初期正性格修士  |
 | **NpcDoAction**<br>`NpcDoAction*npcId#actionId`| 1.NPC强制执行actionId <br>2.npc所在地点会变成执行actionId可能去往的地点之一（与npc类型有关） <br>3.npc信息里的行动会变成所执行的actionId <br>4.执行actionId大多会获取收益（钱、经验、物品等），还有部分actionId是下一月获得收益，也就是说执行一次相当于此npc会比正常情况多获得一次收益  | 1.**本对话指令仅对实例NPC生效，包括有绑定的固定npc，不包括没绑定的工具人NPC** <br>2.**本对话指令仅包括部分可执行actionId，并非全部行动都可执行** <br>主要是配置表《AvatarAI》@NPC行动表中131号以前的 <br>3.执行结果可使用临时参数`GetArg("NpcDoAction")`查看，1为成功0为失败 | `"NpcDoAction*[&roleID&]#51"` 让roleID去东石谷坊市跑商 <br>`"NpcDoAction*609#5"` 让倪旭欣去炼丹（**慎重修改固定NPC的行动id，可能会影响主线剧情，而且部分特殊行动id本指令无法改回**）  |
+| **NpcMapRemoveNpc**<br>`NpcMapRemoveNpc*npcId`| 1.从三类NPC地图中移除NPC，包括大地图、三级场景、副本，使之无法用正常方法被找到交互    | 1.**本对话指令仅对实例NPC生效，包括有绑定的固定npc，不包括没绑定的工具人NPC**  <br>2.执行结果可使用临时参数`GetArg("NpcMapRemoveNpc")`查看，1为成功0为失败 | `"SetInt*npcId#[&roleID&]","NpcMapRemoveNpc*[&GetInt(\"npcId\")&]"`  从地图上移除npcId对应的NPC |
+| **CreateDongFu**<br>`CreateDongFu*dongFuID*level`| 1.按dongFuID创建设定level灵眼等级的洞府 <br>2.若已有此id的洞府，则等效于修改洞府灵眼等级   | 1.**推荐先用环境脚本`PlayerHasDongFu`确认玩家是否有此id的洞府**   <br>2.逸风城购买洞府id为1，门派金丹赠送后山洞府为2  <br>3.洞府id类型为int， 理论上可以有-2,147,483,648 到 2,147,483,647号洞府 | `"CreateDongFu*5#3"`  创建灵眼等级为3的五号洞府 |
+| **SetDongFuName**<br>`SetDongFuName*dongFuID*name`| 1.按dongFuID修改洞府的名字    | 1.**请先用环境脚本`PlayerHasDongFu`确认玩家是否有此id的洞府**    | `"SetDongFuName*5#五号三级"`  给五号洞府改名 |
+| **SetNowDongFuID**<br>`SetNowDongFuID*dongFuID`| 1.在玩家传送进洞府场景"S101"前，通过此指令设定传进几号洞府    | 1.**一般和`PlayerWarp`指令搭配使用**    | `"SetNowDongFuID*5"`  接下来传送进的是五号洞府 |
+| **NpcWarp**<br>`NpcWarp*npcId#场景#index`| 1.将NPC传送至指定场景，原有位置会移除 <br>2.场景为"AllMaps"时，表示传送到大地图，index表示在大地图上路点序号 <br>3.场景为"F"开头时，表示传送到固定副本中，index副本中格子序号；若玩家已在此副本中且index留空或为0，表示传送到玩家当前格子。 <br>4.场景为"S"开头时，表示传送到三级场景中，若场景为"S101"表示洞府，则index表示NPC传到几号洞府，其他情况index无含义  | 1.**本对话指令仅对实例NPC生效，包括有绑定的固定npc，不包括没绑定的工具人NPC**    | `"NpcWarp*[&GetInt(\"npcId\")&]#AllMaps#21"`  将选定的npc传送到大地图21号位置(天机阁位置) <br>`"NpcWarp*[&GetInt(\"npcId\")&]#F26#0"` 将NPC传送到青石灵脉，玩家已在此副本时传动到玩家所在格子  <br>`"NpcWarp*[&GetInt(\"npcId\")&]#S22"` 将NPC传动到云汐城场景 |
+| **PlayerWarp**<br>`PlayerWarp*场景#index`| 1.将玩家传送至指定场景 <br>2.场景为"AllMaps"时，表示传送到大地图，index表示在大地图上路点序号 <br>3.场景为"F"开头时，表示传送到固定副本中，index副本中格子序号；**此方法传送进副本出来后还在原地**。 <br>4.场景为"Sea"开头时，表示传送到海域上，index海域格子总序号，若留空或为0则为本指令默认位置 <br>4.场景为"S"开头时，表示传送到三级场景中。index大于零表示玩家从场景出来后到大地图上的指定位置，index留空或为0表示出来后在大地图的位置不变，-1表示由本指令自动设置出来后的位置（不完全正确，官方命名有部分规律但没完全遵守） <br>4.若场景为"S101"表示洞府，则提前用`SetNowDongFuID`指定要去的洞府  | 1.S开头的三级场景，没有强制绑定出来后到大地图的位置，也就是说进去前在路点几，出来还是原地  <br>2.官方并没有一个“三级场景出来应该在大地图什么位置”的对照表。从剧情的角度，推荐手动指定出来后在大地图的位置，或先用`"PlayerMove"`指令先在大地图上移动 <br>3. 海域位置详见说明，若传送海域不包含指定的index，则会出bug  | `"PlayerWarp*AllMaps#10"`  玩家传送到大地图10号位置 <br>`"PlayerWarp*F16#2"` 玩家传送到风雷谷2号位置（可以是正常无法走到的位置）  <br>`"PlayerWarp*Sea5#0"` 将玩家传送到千流海域默认位置 <br>`"PlayerWarp*S20#-1"` 将玩家传送到逸风城，且出来到大地图的位置由本指令修改|
+| **PlayerMove**<br>`PlayerMove*index`| 1.玩家小人直线移动到指定的index <br>2.玩家在大地图、副本、海上都有效   | 1.**请作者确认玩家所在场景有指定的index** <br>2.尤其是海上，每个海域包含的index都不同，本海域位置可用此移动指令，若为跨海域建议使用传送  | `"PlayerMove*3217"`玩家在千流海域时移动到此指定位置  |
+| **PlayerWalk**<br>`PlayerWalk*index`| 1.仅玩家在大地图有效，如同点击目的地 <br>2.玩家小人会自动寻路一段段移动到指定的index   | 1.**请作者确认玩家所在场景有指定的index** | `"PlayerWalk*20"` 玩家在大地图上时走到指定20位置 |
+| **PlayerGetInRandomFuBen**<br>`PlayerGetInRandomFuBen*fuBenId`| 1.玩家传送进指定的随机副本 <br>2.随机副本可在配置表《EndlessSea》中@随机副本表查询   | 1.**env.mapScene和Tools.getScreenName()查出的是随机副本的uuid，与固定副本的F多少不同**  <br>2.要事后查询玩家在随机副本是哪个id（也就是本指令输入参数），可以使用环境脚本中玩家信息`player.NowRandomFuBenID` <br>3.要查询随机出的副本中文名，可用`VTools.GetPlaceName()` | `"PlayerGetInRandomFuBen*88"`玩家进入某个碎星海随机副本 |
+
+
 
 ## VNext.DialogTrigger
-**触发器**
+**触发器**<br>
+**由于触发器触发较为频繁，建议需要时开启触发器，不需要时关闭触发器，并给触发器加上恰当的condition**
 
 |指令|说明|特点|环境|
 |---|---|---|---|
-| **附近的人**<br>**OnNearNpc** | 1.**必须**把环境脚本`NearNpcContains`作为condition条件之一一起使用<br>2.当附近的人改变时触发，通过`NearNpcContains`判定有没有遇到设定的NPC，从而开启剧情事件<br>3.由于此此触发器触发频繁，建议有必要再开启此触发器，不需使用时关闭触发器 | 1.**队列触发器** <br>该类触发器触发的事件会逐项执行<br>2.屏蔽了反复进出空场景刷概率触发，可反复进出有人的场景刷概率触发<br>3.在洞府闭关，过月结算时有npc拜访也能触发 | 在使用环境脚本`NearNpcContains`作为第一个条件后，以下环境属性可使用<br>roleID<br>roleName<br>roleBindID<br>mapScene |
-| **大地图移动前**<br>**BeforeAllMapMove** | 1.当玩家在宁州大地图移动前触发，**包括自动寻路的每段开头**，包括遁术飞行的开头，不包括到达目的地 <br>2.**一旦成功触发，会终止之后的移动** <br>3.由于此此触发器触发频繁，建议有必要再开启此触发器，不需使用时关闭触发器 <br>4.若condition设置不当，可能会造成玩家频繁触发、寸步难行  | 1.**单项触发器** <br>该类触发器仅触发优先级最高且满足条件的事件  | 常和环境脚本`string GetCurMapRoad()`获取当前道路ID、`string GetRoadName(string roadId)`获取道路名称 搭配使用 |
-| **副本移动前**<br>**BeforeFubenMove** | 1.当玩家在副本移动前触发，鼠标点击格子或wasd移动都可触发，不包括到达目的地 <br>2.**一旦成功触发，会终止之后的移动** <br>3.由于此此触发器触发频繁，建议有必要再开启此触发器，不需使用时关闭触发器 <br>4.若condition设置不当，可能会造成玩家频繁触发、寸步难行  | 1.**单项触发器** <br>该类触发器仅触发优先级最高且满足条件的事件  | 常和环境脚本`int GetCurFubenIndex()`取当前副本位置、`string GetCurScene()`获取当前场景id 搭配使用 |
-| **结算完成**<br>**OnJieSuanComplete** | 1.当玩家结算完成后触发 <br>2.**此触发器推荐适合处理后台数据，如修改NPC和玩家的信息** <br>由于结算完成时间无法控制，因此若进行前台交互对话会显得突兀 <br>3.由于此此触发器触发频繁，建议恰当设置开启和condition判断  | 1.**队列触发器** <br>该类触发器触发的事件会逐项执行<br>  | 常和环境脚本`DateTime GetNowTime()`获取DateTime格式的游戏当前时间、`bool Before/After(int year, int month, int day)`判断是否在某个日期之前之后 搭配使用 |
+| **附近的人**<br>**OnNearNpc** | 1.**必须**把环境脚本`NearNpcContains`作为condition条件之一一起使用<br>2.当附近的人改变时触发，通过`NearNpcContains`判定有没有遇到设定的NPC，从而开启剧情事件 | 1.**队列触发器** <br>该类触发器触发的事件会逐项执行<br>2.屏蔽了反复进出空场景刷概率触发，可反复进出有人的场景刷概率触发<br>3.在洞府闭关，过月结算时有npc拜访也能触发 | 在使用环境脚本`NearNpcContains`作为第一个条件后，以下环境属性可使用<br>roleID<br>roleName<br>roleBindID<br>mapScene |
+| **大地图移动前**<br>**BeforeAllMapMove** | 1.当玩家在宁州大地图移动前触发，**包括自动寻路的每段开头**，包括遁术飞行的开头，不包括到达目的地 <br>2.**一旦成功触发，会终止之后的移动** <br>3.若condition设置不当，可能会造成玩家频繁触发、寸步难行  | 1.**单项触发器** <br>该类触发器仅触发优先级最高且满足条件的事件  | 常和环境脚本`string GetCurMapRoad()`获取当前道路ID、`string GetRoadName(string roadId)`获取道路名称 搭配使用 |
+| **副本移动前**<br>**BeforeFubenMove** | 1.当玩家在副本移动前触发，鼠标点击格子或wasd移动都可触发，不包括到达目的地 <br>2.**一旦成功触发，会终止之后的移动**  <br>3.若condition设置不当，可能会造成玩家频繁触发、寸步难行  | 1.**单项触发器** <br>该类触发器仅触发优先级最高且满足条件的事件  | 常和环境脚本`int GetCurFubenIndex()`取当前副本位置、`string GetCurScene()`获取当前场景id 搭配使用 |
+| **结算完成**<br>**OnJieSuanComplete** | 1.当玩家结算完成后触发 <br>2.**此触发器推荐适合处理后台数据，如修改NPC和玩家的信息** <br>由于结算完成时间无法控制，因此若进行前台交互对话会显得突兀   | 1.**队列触发器** <br>该类触发器触发的事件会逐项执行<br>  | 常和环境脚本`DateTime GetNowTime()`获取DateTime格式的游戏当前时间、`bool Before/After(int year, int month, int day)`判断是否在某个日期之前之后 搭配使用 |
 
 **范例**
 ``` 
@@ -184,3 +196,4 @@
 | `int GetCurFubenIndex()` | 获取玩家在副本中的位置 | **仅当玩家在副本中才有效** | `"主角#我在[&GetPlaceName()&]副本第[&GetCurFubenIndex()&]位置发现了什么"`  |
 | `int GetPlaceName()` | 获取玩家所在场景名称 | 相较于`GetSceneName(GetCurScene())`脚本，本环境脚本还能正确获取随机副本、玩家洞府的名称 | `"主角#我在[&GetPlaceName()&]副本第[&GetCurFubenIndex()&]位置发现了什么"` |
 | `int GetShengWang(int id)` | 根据势力id返回声望 | 势力id可在配置表《str》"@势力好感度名称表"表中查询 | `"主角#我在宁州的声望是[&GetShengWang(0)&]！"` 主角自语宁州的声望 |
+| `bool PlayerHasDongFu(int dongFuID)` | 返回玩家是否已有此id的洞府 |  | `"If*[&PlayerHasDongFu(1)&]#Say*主角#我已在逸风城购买洞府"` 主角自语宁州的声望 |
